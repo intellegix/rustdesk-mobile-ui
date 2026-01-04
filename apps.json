@@ -1,0 +1,110 @@
+[
+  {
+    "id": "claude-code",
+    "name": "Claude Code",
+    "command": "wt -w 0 nt --title \"Claude Code\" cmd /k claude",
+    "icon": "terminal",
+    "color": "#D97706",
+    "category": "Development",
+    "priority": 1
+  },
+  {
+    "id": "vscode",
+    "name": "VS Code",
+    "command": "code",
+    "icon": "code",
+    "color": "#0078D4",
+    "category": "Development",
+    "priority": 2
+  },
+  {
+    "id": "browser",
+    "name": "Edge",
+    "command": "start msedge",
+    "icon": "globe",
+    "color": "#4285F4",
+    "category": "Development",
+    "priority": 3
+  },
+  {
+    "id": "file-explorer",
+    "name": "Files",
+    "command": "explorer",
+    "icon": "folder",
+    "color": "#F59E0B",
+    "category": "System",
+    "priority": 4
+  },
+  {
+    "id": "terminal",
+    "name": "Terminal",
+    "command": "wt",
+    "icon": "terminal-square",
+    "color": "#1F2937",
+    "category": "Development",
+    "priority": 5
+  },
+  {
+    "id": "settings",
+    "name": "Settings",
+    "command": "start ms-settings:",
+    "icon": "settings",
+    "color": "#6B7280",
+    "category": "System",
+    "priority": 6
+  },
+  {
+    "id": "task-manager",
+    "name": "Task Manager",
+    "command": "taskmgr",
+    "icon": "activity",
+    "color": "#10B981",
+    "category": "System",
+    "priority": 7
+  },
+  {
+    "id": "notepad",
+    "name": "Notepad",
+    "command": "notepad",
+    "icon": "file-text",
+    "color": "#8B5CF6",
+    "category": "Productivity",
+    "priority": 8
+  },
+  {
+    "id": "chrome",
+    "name": "Chrome",
+    "command": "start chrome",
+    "icon": "chrome",
+    "color": "#4285F4",
+    "category": "Development",
+    "priority": 9
+  },
+  {
+    "id": "slack",
+    "name": "Slack",
+    "command": "start slack:",
+    "icon": "message-square",
+    "color": "#4A154B",
+    "category": "Communication",
+    "priority": 10
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "command": "start discord:",
+    "icon": "message-circle",
+    "color": "#5865F2",
+    "category": "Communication",
+    "priority": 11
+  },
+  {
+    "id": "spotify",
+    "name": "Spotify",
+    "command": "start spotify:",
+    "icon": "music",
+    "color": "#1DB954",
+    "category": "Entertainment",
+    "priority": 12
+  }
+]

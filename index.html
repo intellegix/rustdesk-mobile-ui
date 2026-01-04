@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Desktop Remote</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1a1a1a;
+            --bg-elevated: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-muted: #555555;
+            --accent-orange: #D97706;
+            --accent-blue: #0078D4;
+            --accent-green: #10B981;
+            --accent-purple: #8B5CF6;
+            --border-color: #2a2a2a;
+            --tile-radius: 24px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            touch-action: manipulation;
+        }
+
+        /* Main Container */
+        .app-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 0 16px;
+            padding-bottom: var(--safe-area-bottom);
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.offline {
+            background: #EF4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-tab.active {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border-color: var(--accent-orange);
+        }
+
+        .nav-tab:active {
+            transform: scale(0.97);
+        }
+
+        .nav-tab svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Scrollable Content Area */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 20px;
+        }
+
+        .content-area::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* View Container */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* App Tiles Grid */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .app-tile {
+            aspect-ratio: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--tile-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--tile-color);
+            opacity: 0.8;
+        }
+
+        .app-tile:active {
+            transform: scale(0.95);
+            background: var(--bg-tertiary);
+        }
+
+        .app-tile.featured {
+            grid-column: span 2;
+            aspect-ratio: 2.2;
+            flex-direction: row;
+            justify-content: flex-start;
+            padding: 0 28px;
+            gap: 20px;
+        }
+
+        .app-tile.featured::before {
+            width: 6px;
+            height: 100%;
+            top: 0;
+            right: auto;
+        }
+
+        .app-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: var(--tile-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .app-tile.featured .app-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+        }
+
+        .app-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .app-tile.featured .app-icon svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .app-tile-info {
+            text-align: center;
+        }
+
+        .app-tile.featured .app-tile-info {
+            text-align: left;
+        }
+
+        .app-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .app-tile.featured .app-name {
+            font-size: 18px;
+        }
+
+        .app-category {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Window Switcher */
+        .windows-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .window-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .window-card:active {
+            transform: scale(0.98);
+            background: var(--bg-tertiary);
+        }
+
+        .window-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .window-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-secondary);
+        }
+
+        .window-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .window-title {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .window-class {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .window-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-action {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .window-action:active {
+            transform: scale(0.9);
+        }
+
+        .window-action.close {
+            background: rgba(239, 68, 68, 0.15);
+            color: #EF4444;
+        }
+
+        .window-action svg {
+            width: 18px;
+            height: 18px;
+            color: var(--text-secondary);
+        }
+
+        .window-action.close svg {
+            color: #EF4444;
+        }
+
+        .no-windows {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-windows svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* System Controls */
+        .controls-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .control-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .control-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .control-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .control-slider-container {
+            flex: 1;
+        }
+
+        .control-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-value {
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .control-slider {
+            width: 100%;
+            height: 40px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .control-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+        }
+
+        .control-slider::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Clipboard Section */
+        .clipboard-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .clipboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .clipboard-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clipboard-title svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .clipboard-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .clipboard-btn {
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            border: none;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clipboard-btn:active {
+            transform: scale(0.95);
+        }
+
+        .clipboard-btn.sync {
+            background: var(--accent-orange);
+        }
+
+        .clipboard-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .clipboard-content {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+            max-height: 120px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+
+        .clipboard-content:empty::before {
+            content: 'Clipboard empty';
+            color: var(--text-muted);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .quick-action {
+            aspect-ratio: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .quick-action:active {
+            transform: scale(0.92);
+            background: var(--bg-tertiary);
+        }
+
+        .quick-action svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .quick-action-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* System Info Card */
+        .system-info-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .system-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .system-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .system-stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .system-stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: calc(var(--safe-area-bottom) + 20px);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Swipe Indicator */
+        .swipe-indicator {
+            width: 40px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin: 0 auto 16px;
+        }
+
+        /* Refresh Animation */
+        @keyframes refresh {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .refreshing svg {
+            animation: refresh 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="header-title">Desktop</h1>
+                <span class="header-subtitle" id="hostname">Loading...</span>
+            </div>
+            <div class="connection-status">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="connection-text">Connected</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <div class="nav-tab active" data-view="apps">
+                <i data-lucide="grid-3x3"></i>
+                <span>Apps</span>
+            </div>
+            <div class="nav-tab" data-view="windows">
+                <i data-lucide="layers"></i>
+                <span>Windows</span>
+            </div>
+            <div class="nav-tab" data-view="controls">
+                <i data-lucide="sliders-horizontal"></i>
+                <span>Controls</span>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Apps View -->
+            <div class="view active" id="apps-view">
+                <div class="app-grid" id="app-grid">
+                    <!-- Apps populated by JS -->
+                </div>
+            </div>
+
+            <!-- Windows View -->
+            <div class="view" id="windows-view">
+                <div class="windows-list" id="windows-list">
+                    <!-- Windows populated by JS -->
+                </div>
+            </div>
+
+            <!-- Controls View -->
+            <div class="view" id="controls-view">
+                <!-- System Info -->
+                <div class="system-info-card">
+                    <div class="system-info-grid" id="system-info">
+                        <div class="system-stat">
+                            <span class="system-stat-label">CPU</span>
+                            <span class="system-stat-value" id="cpu-usage">--%</span>
+                        </div>
+                        <div class="system-stat">
+                            <span class="system-stat-label">Memory</span>
+                            <span class="system-stat-value" id="memory-usage">--</span>
+                        </div>
+                        <div class="system-stat">
+                            <span class="system-stat-label">Uptime</span>
+                            <span class="system-stat-value" id="uptime">--</span>
+                        </div>
+                        <div class="system-stat">
+                            <span class="system-stat-label">Status</span>
+                            <span class="system-stat-value" id="rustdesk-status">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volume Control -->
+                <div class="controls-section">
+                    <div class="section-title">Audio</div>
+                    <div class="control-card">
+                        <div class="control-row">
+                            <div class="control-icon">
+                                <i data-lucide="volume-2"></i>
+                            </div>
+                            <div class="control-slider-container">
+                                <div class="control-label">
+                                    <span>Volume</span>
+                                    <span class="control-value" id="volume-value">50%</span>
+                                </div>
+                                <input type="range" class="control-slider" id="volume-slider" min="0" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brightness Control -->
+                <div class="controls-section">
+                    <div class="section-title">Display</div>
+                    <div class="control-card">
+                        <div class="control-row">
+                            <div class="control-icon">
+                                <i data-lucide="sun"></i>
+                            </div>
+                            <div class="control-slider-container">
+                                <div class="control-label">
+                                    <span>Brightness</span>
+                                    <span class="control-value" id="brightness-value">100%</span>
+                                </div>
+                                <input type="range" class="control-slider" id="brightness-slider" min="5" max="100" value="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clipboard -->
+                <div class="controls-section">
+                    <div class="section-title">Clipboard</div>
+                    <div class="clipboard-card">
+                        <div class="clipboard-header">
+                            <div class="clipboard-title">
+                                <i data-lucide="clipboard"></i>
+                                <span>Synced Content</span>
+                            </div>
+                            <div class="clipboard-actions">
+                                <button class="clipboard-btn" id="paste-btn">
+                                    <i data-lucide="clipboard-paste"></i>
+                                    Paste
+                                </button>
+                                <button class="clipboard-btn sync" id="sync-clipboard-btn">
+                                    <i data-lucide="refresh-cw"></i>
+                                    Sync
+                                </button>
+                            </div>
+                        </div>
+                        <div class="clipboard-content" id="clipboard-content"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="controls-section">
+                    <div class="section-title">Quick Actions</div>
+                    <div class="quick-actions">
+                        <div class="quick-action" data-action="lock">
+                            <i data-lucide="lock"></i>
+                            <span class="quick-action-label">Lock</span>
+                        </div>
+                        <div class="quick-action" data-action="sleep">
+                            <i data-lucide="moon"></i>
+                            <span class="quick-action-label">Sleep</span>
+                        </div>
+                        <div class="quick-action" data-action="screenshot">
+                            <i data-lucide="camera"></i>
+                            <span class="quick-action-label">Screenshot</span>
+                        </div>
+                        <div class="quick-action" data-action="refresh">
+                            <i data-lucide="refresh-cw"></i>
+                            <span class="quick-action-label">Refresh</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i data-lucide="check-circle"></i>
+        <span id="toast-message">Action completed</span>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.origin;
+        let ws = null;
+
+        // Icon mapping for Lucide icons
+        const iconMap = {
+            'terminal': 'terminal',
+            'terminal-square': 'terminal-square',
+            'code': 'code',
+            'globe': 'globe',
+            'folder': 'folder',
+            'settings': 'settings',
+            'chrome': 'chrome',
+            'firefox': 'firefox',
+            'window': 'app-window',
+            'message-square': 'message-square',
+            'message-circle': 'message-circle',
+            'music': 'music'
+        };
+
+        // Initialize Lucide icons
+        function initIcons() {
+            lucide.createIcons();
+        }
+
+        // API calls
+        async function api(endpoint, method = 'GET', data = null) {
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (data) options.body = JSON.stringify(data);
+            
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, options);
+                return await res.json();
+            } catch (err) {
+                console.error('API error:', err);
+                showToast('Connection error', 'alert-circle');
+                return null;
+            }
+        }
+
+        // Toast notification
+        function showToast(message, icon = 'check-circle') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = toast.querySelector('i');
+            
+            toastMessage.textContent = message;
+            toastIcon.setAttribute('data-lucide', icon);
+            lucide.createIcons({ nodes: [toastIcon] });
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // Navigation
+        function setupNavigation() {
+            const tabs = document.querySelectorAll('.nav-tab');
+            const views = document.querySelectorAll('.view');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const viewId = tab.dataset.view;
+                    
+                    tabs.forEach(t => t.classList.remove('active'));
+                    views.forEach(v => v.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(`${viewId}-view`).classList.add('active');
+                    
+                    // Refresh data when switching views
+                    if (viewId === 'windows') loadWindows();
+                    if (viewId === 'controls') loadSystemInfo();
+                });
+            });
+
+            // Swipe gesture support
+            let touchStartX = 0;
+            let touchEndX = 0;
+            const contentArea = document.querySelector('.content-area');
+            
+            contentArea.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+            
+            contentArea.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+            
+            function handleSwipe() {
+                const diff = touchStartX - touchEndX;
+                const viewOrder = ['apps', 'windows', 'controls'];
+                const activeTab = document.querySelector('.nav-tab.active');
+                const currentIndex = viewOrder.indexOf(activeTab.dataset.view);
+                
+                if (Math.abs(diff) > 80) {
+                    let newIndex;
+                    if (diff > 0 && currentIndex < viewOrder.length - 1) {
+                        newIndex = currentIndex + 1;
+                    } else if (diff < 0 && currentIndex > 0) {
+                        newIndex = currentIndex - 1;
+                    }
+                    
+                    if (newIndex !== undefined) {
+                        document.querySelector(`[data-view="${viewOrder[newIndex]}"]`).click();
+                    }
+                }
+            }
+        }
+
+        // Load and render apps
+        async function loadApps() {
+            const data = await api('/api/apps');
+            if (!data) return;
+            
+            const grid = document.getElementById('app-grid');
+            const apps = data.apps;
+            
+            // Separate featured (first 3) and regular apps
+            const featured = apps.slice(0, 3);
+            const regular = apps.slice(3);
+            
+            grid.innerHTML = '';
+            
+            featured.forEach((app, index) => {
+                const tile = createAppTile(app, index === 0);
+                grid.appendChild(tile);
+            });
+            
+            regular.forEach(app => {
+                const tile = createAppTile(app, false);
+                grid.appendChild(tile);
+            });
+            
+            initIcons();
+        }
+
+        function createAppTile(app, featured) {
+            const tile = document.createElement('div');
+            tile.className = `app-tile${featured ? ' featured' : ''}`;
+            tile.style.setProperty('--tile-color', app.color);
+            
+            tile.innerHTML = `
+                <div class="app-icon" style="background: ${app.color}">
+                    <i data-lucide="${iconMap[app.icon] || 'app-window'}"></i>
+                </div>
+                <div class="app-tile-info">
+                    <div class="app-name">${app.name}</div>
+                    <div class="app-category">${app.category || 'App'}</div>
+                </div>
+            `;
+            
+            tile.addEventListener('click', () => launchApp(app.id, app.name));
+            return tile;
+        }
+
+        async function launchApp(appId, appName) {
+            showToast(`Launching ${appName}...`, 'rocket');
+            await api(`/api/launch/${appId}`, 'POST');
+        }
+
+        // Load and render windows
+        async function loadWindows() {
+            const data = await api('/api/windows');
+            if (!data) return;
+            
+            const list = document.getElementById('windows-list');
+            const windows = data.windows;
+            
+            if (windows.length === 0) {
+                list.innerHTML = `
+                    <div class="no-windows">
+                        <i data-lucide="layers"></i>
+                        <div>No open windows</div>
+                    </div>
+                `;
+                initIcons();
+                return;
+            }
+            
+            list.innerHTML = '';
+            windows.forEach(win => {
+                const card = createWindowCard(win);
+                list.appendChild(card);
+            });
+            
+            initIcons();
+        }
+
+        function createWindowCard(win) {
+            const card = document.createElement('div');
+            card.className = 'window-card';
+            
+            card.innerHTML = `
+                <div class="window-icon">
+                    <i data-lucide="${iconMap[win.icon] || 'app-window'}"></i>
+                </div>
+                <div class="window-info">
+                    <div class="window-title">${win.title}</div>
+                    <div class="window-class">${win.class || 'Window'}</div>
+                </div>
+                <div class="window-actions">
+                    <button class="window-action minimize" title="Minimize">
+                        <i data-lucide="minus"></i>
+                    </button>
+                    <button class="window-action close" title="Close">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Click to focus window
+            card.querySelector('.window-info').addEventListener('click', () => focusWindow(win.id));
+            card.querySelector('.minimize').addEventListener('click', (e) => {
+                e.stopPropagation();
+                minimizeWindow(win.id);
+            });
+            card.querySelector('.close').addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeWindow(win.id);
+            });
+            
+            return card;
+        }
+
+        async function focusWindow(windowId) {
+            await api(`/api/windows/${windowId}/focus`, 'POST');
+            showToast('Window focused', 'eye');
+        }
+
+        async function minimizeWindow(windowId) {
+            await api(`/api/windows/${windowId}/minimize`, 'POST');
+            showToast('Window minimized', 'minus');
+            setTimeout(loadWindows, 300);
+        }
+
+        async function closeWindow(windowId) {
+            await api(`/api/windows/${windowId}/close`, 'POST');
+            showToast('Window closed', 'x');
+            setTimeout(loadWindows, 300);
+        }
+
+        // System controls
+        async function loadSystemInfo() {
+            const [volume, brightness, clipboard, systemInfo, rustdeskStatus] = await Promise.all([
+                api('/api/system/volume'),
+                api('/api/system/brightness'),
+                api('/api/clipboard'),
+                api('/api/system/info'),
+                api('/api/rustdesk/status')
+            ]);
+            
+            if (volume) {
+                document.getElementById('volume-slider').value = volume.volume;
+                document.getElementById('volume-value').textContent = `${volume.volume}%`;
+            }
+            
+            if (brightness) {
+                document.getElementById('brightness-slider').value = brightness.brightness;
+                document.getElementById('brightness-value').textContent = `${brightness.brightness}%`;
+            }
+            
+            if (clipboard) {
+                document.getElementById('clipboard-content').textContent = clipboard.content || '';
+            }
+            
+            if (systemInfo) {
+                document.getElementById('hostname').textContent = systemInfo.hostname || 'Desktop';
+                document.getElementById('cpu-usage').textContent = systemInfo.cpu_usage || '--%';
+                document.getElementById('memory-usage').textContent = systemInfo.memory?.used || '--';
+                document.getElementById('uptime').textContent = systemInfo.uptime?.replace('up ', '') || '--';
+            }
+            
+            if (rustdeskStatus) {
+                document.getElementById('rustdesk-status').textContent = rustdeskStatus.status || 'Unknown';
+                const statusDot = document.getElementById('status-dot');
+                const connectionText = document.getElementById('connection-text');
+                
+                if (rustdeskStatus.has_connection) {
+                    statusDot.classList.remove('offline');
+                    connectionText.textContent = 'Connected';
+                } else if (rustdeskStatus.rustdesk_running) {
+                    statusDot.classList.remove('offline');
+                    connectionText.textContent = 'Ready';
+                } else {
+                    statusDot.classList.add('offline');
+                    connectionText.textContent = 'Offline';
+                }
+            }
+        }
+
+        function setupControls() {
+            // Volume slider
+            const volumeSlider = document.getElementById('volume-slider');
+            volumeSlider.addEventListener('input', () => {
+                document.getElementById('volume-value').textContent = `${volumeSlider.value}%`;
+            });
+            volumeSlider.addEventListener('change', async () => {
+                await api('/api/system/volume', 'POST', { level: parseInt(volumeSlider.value) });
+            });
+            
+            // Brightness slider
+            const brightnessSlider = document.getElementById('brightness-slider');
+            brightnessSlider.addEventListener('input', () => {
+                document.getElementById('brightness-value').textContent = `${brightnessSlider.value}%`;
+            });
+            brightnessSlider.addEventListener('change', async () => {
+                await api('/api/system/brightness', 'POST', { level: parseInt(brightnessSlider.value) });
+            });
+            
+            // Clipboard sync
+            document.getElementById('sync-clipboard-btn').addEventListener('click', async () => {
+                const data = await api('/api/clipboard');
+                if (data) {
+                    document.getElementById('clipboard-content').textContent = data.content || '';
+                    showToast('Clipboard synced', 'clipboard-check');
+                }
+            });
+            
+            // Paste from mobile
+            document.getElementById('paste-btn').addEventListener('click', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    await api('/api/clipboard', 'POST', { content: text });
+                    showToast('Pasted to desktop', 'clipboard-paste');
+                } catch (err) {
+                    showToast('Clipboard access denied', 'alert-circle');
+                }
+            });
+            
+            // Quick actions
+            document.querySelectorAll('.quick-action').forEach(action => {
+                action.addEventListener('click', () => handleQuickAction(action.dataset.action));
+            });
+        }
+
+        async function handleQuickAction(action) {
+            switch (action) {
+                case 'lock':
+                    await api('/api/action/lock', 'POST');
+                    showToast('Screen locked', 'lock');
+                    break;
+                case 'sleep':
+                    await api('/api/action/sleep', 'POST');
+                    showToast('Going to sleep...', 'moon');
+                    break;
+                case 'screenshot':
+                    await api('/api/action/screenshot', 'POST');
+                    showToast('Screenshot captured', 'camera');
+                    break;
+                case 'refresh':
+                    const btn = document.querySelector('[data-action="refresh"]');
+                    btn.classList.add('refreshing');
+                    await Promise.all([loadApps(), loadWindows(), loadSystemInfo()]);
+                    btn.classList.remove('refreshing');
+                    showToast('Refreshed', 'refresh-cw');
+                    break;
+            }
+        }
+
+        // WebSocket for real-time updates
+        let pcConnected = true; // Assume connected for local mode
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                // Ping to keep alive
+                setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket closed, reconnecting...');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'pc_status':
+                    // Relay mode: PC connection status
+                    pcConnected = data.connected;
+                    updateConnectionStatus();
+                    break;
+                case 'windows':
+                    // Real-time window updates
+                    break;
+                case 'volume':
+                    document.getElementById('volume-slider').value = data.data.volume;
+                    document.getElementById('volume-value').textContent = `${data.data.volume}%`;
+                    break;
+                case 'brightness':
+                    document.getElementById('brightness-slider').value = data.data.brightness;
+                    document.getElementById('brightness-value').textContent = `${data.data.brightness}%`;
+                    break;
+            }
+        }
+
+        function updateConnectionStatus() {
+            const statusDot = document.getElementById('status-dot');
+            const connectionText = document.getElementById('connection-text');
+
+            if (pcConnected) {
+                statusDot.classList.remove('offline');
+                connectionText.textContent = 'PC Connected';
+            } else {
+                statusDot.classList.add('offline');
+                connectionText.textContent = 'PC Offline';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupNavigation();
+            setupControls();
+            initIcons();
+            
+            await loadApps();
+            await loadSystemInfo();
+            
+            // Try WebSocket connection
+            try {
+                connectWebSocket();
+            } catch (err) {
+                console.log('WebSocket not available');
+            }
+            
+            // Periodic refresh
+            setInterval(loadSystemInfo, 30000);
+        });
+    </script>
+</body>
+</html>
