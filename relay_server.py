@@ -209,13 +209,14 @@ async def pc_websocket(websocket: WebSocket):
     """WebSocket endpoint for the PC client."""
     global pc_connection
 
+    # Accept connection first (required by FastAPI before any interaction)
+    await websocket.accept()
+
     # Check auth token
     token = websocket.query_params.get("token")
     if token != AUTH_TOKEN:
         await websocket.close(code=4001, reason="Invalid token")
         return
-
-    await websocket.accept()
     pc_connection = websocket
     print(f"PC connected from {websocket.client.host}")
 
