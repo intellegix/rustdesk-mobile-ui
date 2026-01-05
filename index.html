@@ -2012,7 +2012,7 @@
 
     <!-- Toast Notification -->
     <div class="toast" id="toast">
-        <i data-lucide="check-circle"></i>
+        <i id="toast-icon" data-lucide="check-circle"></i>
         <span id="toast-message">Action completed</span>
     </div>
 
@@ -2330,12 +2330,23 @@
         function showToast(message, icon = 'check-circle') {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toast-message');
-            const toastIcon = toast.querySelector('i');
-            
+
+            if (!toast || !toastMessage) return;
+
             toastMessage.textContent = message;
-            toastIcon.setAttribute('data-lucide', icon);
-            lucide.createIcons({ nodes: [toastIcon] });
-            
+
+            // Find the icon element (could be i or svg after lucide transforms it)
+            let toastIcon = document.getElementById('toast-icon');
+            if (!toastIcon) {
+                // Try to find any icon element in toast
+                toastIcon = toast.querySelector('i, svg');
+            }
+
+            if (toastIcon) {
+                toastIcon.setAttribute('data-lucide', icon);
+                lucide.createIcons({ nodes: [toastIcon] });
+            }
+
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2500);
         }
