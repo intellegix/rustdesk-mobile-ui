@@ -711,6 +711,273 @@
         .refreshing svg {
             animation: refresh 1s linear infinite;
         }
+
+        /* ========== STREAM VIEW ========== */
+        .stream-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .stream-overlay.active {
+            display: flex;
+        }
+
+        .stream-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .stream-back {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .stream-back svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-primary);
+        }
+
+        .stream-title-container {
+            flex: 1;
+            text-align: center;
+            padding: 0 12px;
+        }
+
+        .stream-title {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stream-type-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-top: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .stream-type-badge.terminal {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+        }
+
+        .stream-type-badge.browser {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3B82F6;
+        }
+
+        .stream-type-badge.generic {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9CA3AF;
+        }
+
+        .stream-fps {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 6px 12px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+        }
+
+        .stream-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+        }
+
+        #stream-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .stream-loading {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-secondary);
+        }
+
+        .stream-loading .spinner {
+            width: 48px;
+            height: 48px;
+        }
+
+        .stream-error {
+            position: absolute;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: #EF4444;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stream-error.show {
+            display: flex;
+        }
+
+        .stream-error svg {
+            width: 48px;
+            height: 48px;
+        }
+
+        /* Browser Controls */
+        .browser-controls {
+            display: none;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .browser-controls.show {
+            display: flex;
+        }
+
+        .browser-nav-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .browser-nav-btn:active {
+            transform: scale(0.92);
+            background: var(--bg-tertiary);
+        }
+
+        .browser-nav-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-primary);
+        }
+
+        .browser-url-container {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .browser-url-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+        }
+
+        .browser-url-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .browser-go-btn {
+            padding: 0 20px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .browser-go-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Stream Footer */
+        .stream-footer {
+            display: flex;
+            padding: 16px;
+            gap: 10px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            padding-bottom: calc(16px + var(--safe-area-bottom));
+        }
+
+        .stream-action {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .stream-action:active {
+            transform: scale(0.95);
+            background: var(--bg-tertiary);
+        }
+
+        .stream-action svg {
+            width: 22px;
+            height: 22px;
+            color: var(--text-primary);
+        }
+
+        .stream-action-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stream-action.danger {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .stream-action.danger svg {
+            color: #EF4444;
+        }
     </style>
 </head>
 <body>
@@ -875,6 +1142,69 @@
     <div class="toast" id="toast">
         <i data-lucide="check-circle"></i>
         <span id="toast-message">Action completed</span>
+    </div>
+
+    <!-- Stream View Overlay -->
+    <div class="stream-overlay" id="stream-overlay">
+        <header class="stream-header">
+            <button class="stream-back" id="stream-back">
+                <i data-lucide="arrow-left"></i>
+            </button>
+            <div class="stream-title-container">
+                <div class="stream-title" id="stream-window-title">Window</div>
+                <span class="stream-type-badge generic" id="stream-type-badge">Generic</span>
+            </div>
+            <span class="stream-fps" id="stream-fps">-- FPS</span>
+        </header>
+
+        <div class="stream-container">
+            <canvas id="stream-canvas"></canvas>
+            <div class="stream-loading" id="stream-loading">
+                <div class="spinner"></div>
+                <span>Connecting to stream...</span>
+            </div>
+            <div class="stream-error" id="stream-error">
+                <i data-lucide="alert-circle"></i>
+                <span id="stream-error-msg">Stream error</span>
+            </div>
+        </div>
+
+        <!-- Browser Controls (shown for browser windows) -->
+        <div class="browser-controls" id="browser-controls">
+            <button class="browser-nav-btn" id="browser-back">
+                <i data-lucide="arrow-left"></i>
+            </button>
+            <button class="browser-nav-btn" id="browser-forward">
+                <i data-lucide="arrow-right"></i>
+            </button>
+            <button class="browser-nav-btn" id="browser-refresh">
+                <i data-lucide="refresh-cw"></i>
+            </button>
+            <div class="browser-url-container">
+                <input type="url" class="browser-url-input" id="browser-url" placeholder="Enter URL...">
+                <button class="browser-go-btn" id="browser-go">Go</button>
+            </div>
+        </div>
+
+        <!-- Window Actions Footer -->
+        <footer class="stream-footer">
+            <button class="stream-action" id="stream-focus">
+                <i data-lucide="maximize-2"></i>
+                <span class="stream-action-label">Focus</span>
+            </button>
+            <button class="stream-action" id="stream-minimize">
+                <i data-lucide="minus"></i>
+                <span class="stream-action-label">Minimize</span>
+            </button>
+            <button class="stream-action" id="stream-maximize">
+                <i data-lucide="square"></i>
+                <span class="stream-action-label">Maximize</span>
+            </button>
+            <button class="stream-action danger" id="stream-close">
+                <i data-lucide="x"></i>
+                <span class="stream-action-label">Close</span>
+            </button>
+        </footer>
     </div>
 
     <script>
@@ -1092,8 +1422,10 @@
                 </div>
             `;
             
-            // Click to focus window
-            card.querySelector('.window-info').addEventListener('click', () => focusWindow(win.id));
+            // Click to open stream view
+            card.querySelector('.window-info').addEventListener('click', () => {
+                streamController.openStream(win.id, win.title, win.class);
+            });
             card.querySelector('.minimize').addEventListener('click', (e) => {
                 e.stopPropagation();
                 minimizeWindow(win.id);
@@ -1102,7 +1434,7 @@
                 e.stopPropagation();
                 closeWindow(win.id);
             });
-            
+
             return card;
         }
 
@@ -1288,6 +1620,15 @@
                     document.getElementById('brightness-slider').value = data.data.brightness;
                     document.getElementById('brightness-value').textContent = `${data.data.brightness}%`;
                     break;
+                case 'stream_frame':
+                    streamController.handleFrame(data);
+                    break;
+                case 'stream_error':
+                    streamController.handleError(data);
+                    break;
+                case 'stream_status':
+                    streamController.handleStatus(data);
+                    break;
             }
         }
 
@@ -1304,22 +1645,268 @@
             }
         }
 
+        // ========== STREAM CONTROLLER ==========
+        class StreamController {
+            constructor() {
+                this.currentWindowId = null;
+                this.windowType = 'generic';
+                this.canvas = document.getElementById('stream-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.frameCount = 0;
+                this.fpsStartTime = Date.now();
+                this.currentFps = 0;
+                this.streamActive = false;
+            }
+
+            async openStream(windowId, windowTitle, windowClass) {
+                this.currentWindowId = windowId;
+                this.frameCount = 0;
+                this.fpsStartTime = Date.now();
+
+                // Show overlay
+                document.getElementById('stream-overlay').classList.add('active');
+                document.getElementById('stream-window-title').textContent = windowTitle;
+                document.getElementById('stream-loading').style.display = 'flex';
+                document.getElementById('stream-error').classList.remove('show');
+
+                // Get window info to determine type
+                try {
+                    const info = await api(`/api/windows/${windowId}/info`);
+                    if (info && info.type) {
+                        this.windowType = info.type;
+                    } else {
+                        // Fallback: guess from class name
+                        this.windowType = this.guessWindowType(windowClass);
+                    }
+                } catch (e) {
+                    this.windowType = this.guessWindowType(windowClass);
+                }
+
+                // Update UI based on type
+                this.updateWindowTypeUI();
+
+                // Start the stream via WebSocket
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'stream_start',
+                        window_id: windowId,
+                        options: { fps: 8, quality: 60, max_width: 800 }
+                    }));
+                    this.streamActive = true;
+                } else {
+                    this.showError('WebSocket not connected');
+                }
+
+                initIcons();
+            }
+
+            guessWindowType(windowClass) {
+                const cls = (windowClass || '').toLowerCase();
+                if (['cmd', 'powershell', 'pwsh', 'terminal', 'windowsterminal', 'conhost'].some(t => cls.includes(t))) {
+                    return 'terminal';
+                }
+                if (['chrome', 'msedge', 'firefox', 'brave', 'opera'].some(b => cls.includes(b))) {
+                    return 'browser';
+                }
+                return 'generic';
+            }
+
+            updateWindowTypeUI() {
+                const badge = document.getElementById('stream-type-badge');
+                const browserControls = document.getElementById('browser-controls');
+
+                badge.className = `stream-type-badge ${this.windowType}`;
+                badge.textContent = this.windowType.charAt(0).toUpperCase() + this.windowType.slice(1);
+
+                // Show browser controls for browser windows
+                if (this.windowType === 'browser') {
+                    browserControls.classList.add('show');
+                } else {
+                    browserControls.classList.remove('show');
+                }
+            }
+
+            closeStream() {
+                if (this.currentWindowId && this.streamActive) {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'stream_stop',
+                            window_id: this.currentWindowId
+                        }));
+                    }
+                }
+                this.streamActive = false;
+                this.currentWindowId = null;
+                document.getElementById('stream-overlay').classList.remove('active');
+            }
+
+            handleFrame(data) {
+                if (data.window_id !== this.currentWindowId) return;
+
+                // Hide loading, show canvas
+                document.getElementById('stream-loading').style.display = 'none';
+                document.getElementById('stream-error').classList.remove('show');
+
+                // Create image from base64
+                const img = new Image();
+                img.onload = () => {
+                    // Resize canvas to match image
+                    this.canvas.width = img.width;
+                    this.canvas.height = img.height;
+                    this.ctx.drawImage(img, 0, 0);
+                };
+                img.src = 'data:image/jpeg;base64,' + data.frame;
+
+                // Calculate FPS
+                this.frameCount++;
+                const elapsed = (Date.now() - this.fpsStartTime) / 1000;
+                if (elapsed >= 1) {
+                    this.currentFps = Math.round(this.frameCount / elapsed);
+                    document.getElementById('stream-fps').textContent = `${this.currentFps} FPS`;
+                    this.frameCount = 0;
+                    this.fpsStartTime = Date.now();
+                }
+            }
+
+            handleError(data) {
+                if (data.window_id !== this.currentWindowId) return;
+                this.showError(data.error);
+            }
+
+            handleStatus(data) {
+                if (data.window_id !== this.currentWindowId) return;
+                if (data.status === 'stopped') {
+                    this.streamActive = false;
+                }
+            }
+
+            showError(message) {
+                document.getElementById('stream-loading').style.display = 'none';
+                document.getElementById('stream-error').classList.add('show');
+                document.getElementById('stream-error-msg').textContent = message;
+            }
+
+            // Chrome control methods
+            async navigateToUrl(url) {
+                if (!this.currentWindowId || this.windowType !== 'browser') return;
+                await api(`/api/windows/${this.currentWindowId}/chrome/navigate`, 'POST', { url });
+            }
+
+            async goBack() {
+                if (!this.currentWindowId || this.windowType !== 'browser') return;
+                await api(`/api/windows/${this.currentWindowId}/chrome/back`, 'POST');
+            }
+
+            async goForward() {
+                if (!this.currentWindowId || this.windowType !== 'browser') return;
+                await api(`/api/windows/${this.currentWindowId}/chrome/forward`, 'POST');
+            }
+
+            async refresh() {
+                if (!this.currentWindowId || this.windowType !== 'browser') return;
+                await api(`/api/windows/${this.currentWindowId}/chrome/refresh`, 'POST');
+            }
+
+            // Window actions
+            async focusWindow() {
+                if (!this.currentWindowId) return;
+                await api(`/api/windows/${this.currentWindowId}/focus`, 'POST');
+                showToast('Window focused', 'maximize-2');
+            }
+
+            async minimizeWindow() {
+                if (!this.currentWindowId) return;
+                await api(`/api/windows/${this.currentWindowId}/minimize`, 'POST');
+                showToast('Window minimized', 'minus');
+                this.closeStream();
+            }
+
+            async maximizeWindow() {
+                if (!this.currentWindowId) return;
+                await api(`/api/windows/${this.currentWindowId}/maximize`, 'POST');
+                showToast('Window maximized', 'square');
+            }
+
+            async closeWindow() {
+                if (!this.currentWindowId) return;
+                await api(`/api/windows/${this.currentWindowId}/close`, 'POST');
+                showToast('Window closed', 'x');
+                this.closeStream();
+            }
+        }
+
+        const streamController = new StreamController();
+
+        function setupStreamControls() {
+            // Back button
+            document.getElementById('stream-back').addEventListener('click', () => {
+                streamController.closeStream();
+            });
+
+            // Window actions
+            document.getElementById('stream-focus').addEventListener('click', () => {
+                streamController.focusWindow();
+            });
+
+            document.getElementById('stream-minimize').addEventListener('click', () => {
+                streamController.minimizeWindow();
+            });
+
+            document.getElementById('stream-maximize').addEventListener('click', () => {
+                streamController.maximizeWindow();
+            });
+
+            document.getElementById('stream-close').addEventListener('click', () => {
+                streamController.closeWindow();
+            });
+
+            // Browser controls
+            document.getElementById('browser-back').addEventListener('click', () => {
+                streamController.goBack();
+            });
+
+            document.getElementById('browser-forward').addEventListener('click', () => {
+                streamController.goForward();
+            });
+
+            document.getElementById('browser-refresh').addEventListener('click', () => {
+                streamController.refresh();
+            });
+
+            document.getElementById('browser-go').addEventListener('click', () => {
+                const url = document.getElementById('browser-url').value;
+                if (url) {
+                    streamController.navigateToUrl(url);
+                }
+            });
+
+            document.getElementById('browser-url').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const url = e.target.value;
+                    if (url) {
+                        streamController.navigateToUrl(url);
+                    }
+                }
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             setupNavigation();
             setupControls();
+            setupStreamControls();
             initIcons();
-            
+
             await loadApps();
             await loadSystemInfo();
-            
+
             // Try WebSocket connection
             try {
                 connectWebSocket();
             } catch (err) {
                 console.log('WebSocket not available');
             }
-            
+
             // Periodic refresh
             setInterval(loadSystemInfo, 30000);
         });

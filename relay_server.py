@@ -354,6 +354,59 @@ async def action_screenshot():
     return await relay_to_pc("/api/action/screenshot", "POST")
 
 
+# Window streaming endpoints
+@app.get("/api/windows/{window_id}/info")
+async def get_window_info(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/info", "GET")
+
+
+@app.get("/api/windows/{window_id}/snapshot")
+async def get_window_snapshot(window_id: str, quality: int = 60, max_width: int = 800):
+    return await relay_to_pc(f"/api/windows/{window_id}/snapshot", "GET", {"quality": quality, "max_width": max_width})
+
+
+# Chrome control endpoints
+@app.post("/api/windows/{window_id}/chrome/navigate")
+async def chrome_navigate(window_id: str, request: Request):
+    data = await request.json()
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/navigate", "POST", data)
+
+
+@app.post("/api/windows/{window_id}/chrome/back")
+async def chrome_back(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/back", "POST")
+
+
+@app.post("/api/windows/{window_id}/chrome/forward")
+async def chrome_forward(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/forward", "POST")
+
+
+@app.post("/api/windows/{window_id}/chrome/refresh")
+async def chrome_refresh(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/refresh", "POST")
+
+
+@app.post("/api/windows/{window_id}/chrome/new-tab")
+async def chrome_new_tab(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/new-tab", "POST")
+
+
+@app.post("/api/windows/{window_id}/chrome/close-tab")
+async def chrome_close_tab(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/close-tab", "POST")
+
+
+@app.post("/api/windows/{window_id}/chrome/next-tab")
+async def chrome_next_tab(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/next-tab", "POST")
+
+
+@app.post("/api/windows/{window_id}/chrome/prev-tab")
+async def chrome_prev_tab(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/chrome/prev-tab", "POST")
+
+
 @app.websocket("/ws/pc")
 async def pc_websocket(websocket: WebSocket):
     """WebSocket endpoint for the PC client."""
@@ -380,15 +433,40 @@ async def pc_websocket(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+            msg_type = data.get("type", "")
 
-            if data.get("type") == "response":
+            if msg_type == "response":
                 # Handle response to a pending request
                 request_id = data.get("request_id")
                 if request_id in pending_requests:
                     pending_requests[request_id].set_result(data.get("data", {}))
 
-            elif data.get("type") == "broadcast":
+            elif msg_type == "broadcast":
                 # Broadcast to all web clients
+                for wc in web_connections:
+                    try:
+                        await wc.send_json(data)
+                    except:
+                        pass
+
+            elif msg_type == "stream_frame":
+                # Forward stream frame to all web clients
+                for wc in web_connections:
+                    try:
+                        await wc.send_json(data)
+                    except:
+                        pass
+
+            elif msg_type == "stream_error":
+                # Forward stream error to all web clients
+                for wc in web_connections:
+                    try:
+                        await wc.send_json(data)
+                    except:
+                        pass
+
+            elif msg_type == "stream_status":
+                # Forward stream status to all web clients
                 for wc in web_connections:
                     try:
                         await wc.send_json(data)
@@ -421,9 +499,28 @@ async def web_websocket(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+            msg_type = data.get("type", "")
 
-            if data.get("type") == "ping":
+            if msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
+
+            elif msg_type in ("stream_start", "stream_stop", "stream_adjust"):
+                # Forward stream control messages to PC
+                if pc_connection:
+                    try:
+                        await pc_connection.send_json(data)
+                    except:
+                        await websocket.send_json({
+                            "type": "stream_error",
+                            "window_id": data.get("window_id"),
+                            "error": "PC not connected"
+                        })
+                else:
+                    await websocket.send_json({
+                        "type": "stream_error",
+                        "window_id": data.get("window_id"),
+                        "error": "PC not connected"
+                    })
 
     except WebSocketDisconnect:
         if websocket in web_connections:

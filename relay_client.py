@@ -2,6 +2,7 @@
 """
 RustDesk Mobile UI - Relay Client (Runs on your PC)
 Connects to the relay server and executes commands locally.
+Supports live window streaming.
 """
 
 import asyncio
@@ -10,6 +11,7 @@ import os
 import sys
 import argparse
 from urllib.parse import urljoin
+from typing import Dict, Set
 
 import aiohttp
 
@@ -19,6 +21,15 @@ from server import (
     get_brightness, set_brightness, get_system_info, get_rustdesk_status,
     HAS_WIN32, HAS_PYCAW, HAS_SBC
 )
+
+# Import window capture
+try:
+    from window_capture import WindowCapture, ChromeController
+    HAS_CAPTURE = WindowCapture.is_available()
+except ImportError:
+    HAS_CAPTURE = False
+    WindowCapture = None
+    ChromeController = None
 
 import subprocess
 import ctypes
@@ -40,6 +51,8 @@ class RelayClient:
         self.auth_token = auth_token
         self.ws = None
         self.running = False
+        self.active_streams: Dict[str, asyncio.Task] = {}  # window_id -> capture task
+        self.stream_options: Dict[str, dict] = {}  # window_id -> {fps, quality, max_width}
 
     async def handle_request(self, request_id: str, endpoint: str, method: str, data: dict = None) -> dict:
         """Handle an incoming request from the relay."""
@@ -176,11 +189,150 @@ class RelayClient:
             elif endpoint == "/api/health" and method == "GET":
                 return {"status": "ok", "timestamp": datetime.now().isoformat(), "platform": "windows"}
 
+            # Window info endpoint
+            elif endpoint.startswith("/api/windows/") and "/info" in endpoint:
+                window_id = endpoint.split("/")[3]
+                if HAS_CAPTURE:
+                    return WindowCapture.get_window_info(int(window_id))
+                return {"error": "Window capture not available"}
+
+            # Window snapshot endpoint
+            elif endpoint.startswith("/api/windows/") and "/snapshot" in endpoint:
+                window_id = endpoint.split("/")[3]
+                quality = data.get("quality", 60) if data else 60
+                max_width = data.get("max_width", 800) if data else 800
+                if HAS_CAPTURE:
+                    result = WindowCapture.capture_window(int(window_id), quality=quality, max_width=max_width)
+                    if result:
+                        b64_data, width, height = result
+                        return {"frame": b64_data, "width": width, "height": height, "window_id": window_id}
+                    return {"error": "Window not available"}
+                return {"error": "Window capture not available"}
+
+            # Chrome control endpoints
+            elif endpoint.startswith("/api/windows/") and "/chrome/" in endpoint:
+                parts = endpoint.split("/")
+                window_id = parts[3]
+                action = parts[5]  # navigate, back, forward, refresh, etc.
+                hwnd = int(window_id)
+
+                if not HAS_CAPTURE or ChromeController is None:
+                    return {"error": "Chrome control not available"}
+
+                if action == "navigate":
+                    url = data.get("url", "") if data else ""
+                    success = ChromeController.navigate_to_url(hwnd, url)
+                elif action == "back":
+                    success = ChromeController.go_back(hwnd)
+                elif action == "forward":
+                    success = ChromeController.go_forward(hwnd)
+                elif action == "refresh":
+                    success = ChromeController.refresh(hwnd)
+                elif action == "new-tab":
+                    success = ChromeController.new_tab(hwnd)
+                elif action == "close-tab":
+                    success = ChromeController.close_tab(hwnd)
+                elif action == "next-tab":
+                    success = ChromeController.next_tab(hwnd)
+                elif action == "prev-tab":
+                    success = ChromeController.prev_tab(hwnd)
+                else:
+                    return {"error": f"Unknown chrome action: {action}"}
+
+                return {"status": "success" if success else "failed"}
+
             else:
                 return {"error": f"Unknown endpoint: {endpoint}"}
 
         except Exception as e:
             return {"error": str(e)}
+
+    async def start_stream(self, window_id: str, options: dict):
+        """Start streaming a window."""
+        if not HAS_CAPTURE:
+            await self.send_stream_error(window_id, "Window capture not available")
+            return
+
+        # Stop existing stream if any
+        await self.stop_stream(window_id)
+
+        fps = options.get("fps", 8)
+        quality = options.get("quality", 60)
+        max_width = options.get("max_width", 800)
+
+        self.stream_options[window_id] = {"fps": fps, "quality": quality, "max_width": max_width}
+        self.active_streams[window_id] = asyncio.create_task(
+            self._capture_loop(window_id, fps, quality, max_width)
+        )
+
+        print(f"Started stream for window {window_id} at {fps} FPS")
+
+    async def stop_stream(self, window_id: str):
+        """Stop streaming a window."""
+        if window_id in self.active_streams:
+            self.active_streams[window_id].cancel()
+            try:
+                await self.active_streams[window_id]
+            except asyncio.CancelledError:
+                pass
+            del self.active_streams[window_id]
+            if window_id in self.stream_options:
+                del self.stream_options[window_id]
+            print(f"Stopped stream for window {window_id}")
+
+    async def _capture_loop(self, window_id: str, fps: int, quality: int, max_width: int):
+        """Capture and stream frames."""
+        interval = 1.0 / fps
+        hwnd = int(window_id)
+        seq = 0
+
+        while True:
+            try:
+                result = WindowCapture.capture_window(hwnd, quality=quality, max_width=max_width)
+
+                if result is None:
+                    await self.send_stream_error(window_id, "Window not available")
+                    break
+
+                b64_data, width, height = result
+                seq += 1
+
+                # Send frame to relay
+                if self.ws:
+                    await self.ws.send_json({
+                        "type": "stream_frame",
+                        "window_id": window_id,
+                        "frame": b64_data,
+                        "width": width,
+                        "height": height,
+                        "seq": seq
+                    })
+
+                await asyncio.sleep(interval)
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Capture error: {e}")
+                await self.send_stream_error(window_id, str(e))
+                break
+
+    async def send_stream_error(self, window_id: str, error: str):
+        """Send stream error to relay."""
+        if self.ws:
+            try:
+                await self.ws.send_json({
+                    "type": "stream_error",
+                    "window_id": window_id,
+                    "error": error
+                })
+            except:
+                pass
+
+    async def stop_all_streams(self):
+        """Stop all active streams."""
+        for window_id in list(self.active_streams.keys()):
+            await self.stop_stream(window_id)
 
     async def connect(self):
         """Connect to the relay server."""
@@ -199,9 +351,10 @@ class RelayClient:
                         async for msg in ws:
                             if msg.type == aiohttp.WSMsgType.TEXT:
                                 data = json.loads(msg.data)
+                                msg_type = data.get("type", "")
 
-                                if data.get("type") == "request":
-                                    # Handle request
+                                if msg_type == "request":
+                                    # Handle API request
                                     request_id = data.get("request_id")
                                     endpoint = data.get("endpoint")
                                     method = data.get("method", "GET")
@@ -220,6 +373,27 @@ class RelayClient:
                                         "data": result
                                     })
 
+                                elif msg_type == "stream_start":
+                                    # Start streaming a window
+                                    window_id = data.get("window_id")
+                                    options = data.get("options", {})
+                                    if window_id:
+                                        await self.start_stream(window_id, options)
+
+                                elif msg_type == "stream_stop":
+                                    # Stop streaming a window
+                                    window_id = data.get("window_id")
+                                    if window_id:
+                                        await self.stop_stream(window_id)
+
+                                elif msg_type == "stream_adjust":
+                                    # Adjust stream settings
+                                    window_id = data.get("window_id")
+                                    options = data.get("options", {})
+                                    if window_id:
+                                        await self.stop_stream(window_id)
+                                        await self.start_stream(window_id, options)
+
                             elif msg.type == aiohttp.WSMsgType.ERROR:
                                 print(f"WebSocket error: {ws.exception()}")
                                 break
@@ -228,6 +402,9 @@ class RelayClient:
                     print(f"Connection error: {e}")
                 except Exception as e:
                     print(f"Error: {e}")
+
+                # Stop all streams on disconnect
+                await self.stop_all_streams()
 
                 if self.running:
                     print("Reconnecting in 5 seconds...")
@@ -243,6 +420,7 @@ class RelayClient:
         print(f"pywin32: {'OK' if HAS_WIN32 else 'MISSING'}")
         print(f"pycaw: {'OK' if HAS_PYCAW else 'MISSING'}")
         print(f"screen_brightness_control: {'OK' if HAS_SBC else 'MISSING'}")
+        print(f"Window Capture: {'OK' if HAS_CAPTURE else 'MISSING'}")
         print("=" * 50)
         print("Press Ctrl+C to stop")
         print()
