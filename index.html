@@ -946,6 +946,31 @@
             display: flex;
         }
 
+        .terminal-tab-switcher {
+            display: flex;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .tab-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 2px solid var(--accent-orange);
+            color: var(--accent-orange);
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .tab-btn:active {
+            transform: scale(0.92);
+            background: var(--accent-orange);
+            color: white;
+        }
+
         .terminal-quick-keys {
             display: flex;
             gap: 8px;
@@ -1022,6 +1047,39 @@
         .term-send svg {
             width: 22px;
             height: 22px;
+        }
+
+        .term-clear-local,
+        .term-clear-remote {
+            width: 44px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .term-clear-local:active,
+        .term-clear-remote:active {
+            transform: scale(0.92);
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .term-clear-local svg,
+        .term-clear-remote svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .term-clear-remote {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
         }
 
         /* Stream Footer */
@@ -1621,6 +1679,15 @@
 
         <!-- Terminal Keyboard Controls (shown for terminal windows) -->
         <div class="terminal-keyboard" id="terminal-keyboard">
+            <!-- Tab Switcher Row (Ctrl+Alt+1-6) -->
+            <div class="terminal-tab-switcher">
+                <button class="tab-btn" data-tab="1" title="Ctrl+Alt+1">1</button>
+                <button class="tab-btn" data-tab="2" title="Ctrl+Alt+2">2</button>
+                <button class="tab-btn" data-tab="3" title="Ctrl+Alt+3">3</button>
+                <button class="tab-btn" data-tab="4" title="Ctrl+Alt+4">4</button>
+                <button class="tab-btn" data-tab="5" title="Ctrl+Alt+5">5</button>
+                <button class="tab-btn" data-tab="6" title="Ctrl+Alt+6">6</button>
+            </div>
             <div class="terminal-quick-keys">
                 <button class="term-key" data-key="ArrowUp" title="Up">↑</button>
                 <button class="term-key" data-key="ArrowDown" title="Down">↓</button>
@@ -1631,9 +1698,15 @@
                 <button class="term-key ctrl-key" data-key="l" data-ctrl="true" title="Clear">^L</button>
             </div>
             <div class="terminal-input-row">
+                <button class="term-clear-local" id="term-clear-local" title="Clear input">
+                    <i data-lucide="x"></i>
+                </button>
                 <input type="text" class="term-input" id="term-input" placeholder="Type command..." autocomplete="off" autocapitalize="off" spellcheck="false">
                 <button class="term-send" id="term-send">
                     <i data-lucide="corner-down-left"></i>
+                </button>
+                <button class="term-clear-remote" id="term-clear-remote" title="Clear desktop line">
+                    <i data-lucide="trash-2"></i>
                 </button>
             </div>
         </div>
@@ -2791,6 +2864,18 @@
         function setupTerminalKeyboard() {
             console.log('[SETUP] Setting up terminal keyboard...');
 
+            // Tab switcher buttons (1-6) - send Ctrl+Alt+N
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            console.log('[SETUP] Found', tabBtns.length, 'tab buttons');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabNum = btn.dataset.tab;
+                    console.log('[TERM] Tab button clicked:', tabNum);
+                    sendTerminalKey(tabNum, { ctrl: true, alt: true });
+                    showToast('Tab ' + tabNum, 'layout-grid');
+                });
+            });
+
             // Quick keys (arrows, tab, ctrl combos)
             const quickKeys = document.querySelectorAll('.term-key');
             console.log('[SETUP] Found', quickKeys.length, 'quick keys');
@@ -2823,6 +2908,29 @@
                     } else {
                         showToast('Enter a command', 'alert-circle');
                     }
+                });
+            }
+
+            // Clear local input button
+            const clearLocal = document.getElementById('term-clear-local');
+            if (clearLocal) {
+                clearLocal.addEventListener('click', () => {
+                    termInput.value = '';
+                    termInput.focus();
+                    showToast('Input cleared', 'x');
+                });
+            }
+
+            // Clear desktop line button (Ctrl+A to select all, then Delete)
+            const clearRemote = document.getElementById('term-clear-remote');
+            if (clearRemote) {
+                clearRemote.addEventListener('click', () => {
+                    // Send Ctrl+A (select all) then Delete to clear the line on desktop
+                    sendTerminalKey('a', { ctrl: true });
+                    setTimeout(() => {
+                        sendTerminalKey('Delete', {});
+                        showToast('Desktop cleared', 'trash-2');
+                    }, 50);
                 });
             }
 
