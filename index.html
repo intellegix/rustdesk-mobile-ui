@@ -816,8 +816,8 @@
         }
 
         #stream-canvas {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: auto;
             object-fit: contain;
         }
 
@@ -2042,7 +2042,7 @@
                     ws.send(JSON.stringify({
                         type: 'stream_start',
                         window_id: windowId,
-                        options: { fps: 8, quality: 60, max_width: 800 }
+                        options: { fps: 8, quality: 80, max_width: 500 }
                     }));
                     this.streamActive = true;
                 } else {
