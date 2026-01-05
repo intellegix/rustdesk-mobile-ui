@@ -371,8 +371,12 @@ class RelayClient:
                         except Exception as e:
                             print(f"[PASTE-IMAGE] Could not focus window: {e}")
 
-                    # Simulate Ctrl+V to paste
+                    # Simulate paste - try both methods for different terminals
                     time.sleep(0.1)
+                    # Windows Terminal and some apps use Ctrl+Shift+V
+                    pyautogui.hotkey('ctrl', 'shift', 'v')
+                    time.sleep(0.15)
+                    # Standard Ctrl+V as fallback for other apps
                     pyautogui.hotkey('ctrl', 'v')
 
                     return {"status": "pasted"}
@@ -954,6 +958,52 @@ class RelayClient:
                                         await self.send_terminal_key(window_id, key, modifiers)
                                     else:
                                         print(f"[KEY] Missing window_id or key")
+
+                                elif msg_type == "remote_click":
+                                    # Click at position in browser window
+                                    window_id = data.get("window_id")
+                                    x = data.get("x", 0)
+                                    y = data.get("y", 0)
+                                    print(f"[CLICK] Received: window={window_id}, x={x}, y={y}")
+                                    if window_id and HAS_WIN32:
+                                        try:
+                                            hwnd = int(window_id)
+                                            # Get window position
+                                            rect = win32gui.GetWindowRect(hwnd)
+                                            # Calculate absolute position
+                                            abs_x = rect[0] + x
+                                            abs_y = rect[1] + y
+                                            # Focus window first
+                                            if win32gui.IsIconic(hwnd):
+                                                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                                            win32gui.SetForegroundWindow(hwnd)
+                                            await asyncio.sleep(0.1)
+                                            # Click at position
+                                            pyautogui.click(abs_x, abs_y)
+                                            print(f"[CLICK] Clicked at ({abs_x}, {abs_y})")
+                                        except Exception as e:
+                                            print(f"[CLICK] Error: {e}")
+
+                                elif msg_type == "remote_scroll":
+                                    # Scroll in browser window
+                                    window_id = data.get("window_id")
+                                    delta_y = data.get("delta_y", 0)
+                                    print(f"[SCROLL] Received: window={window_id}, delta_y={delta_y}")
+                                    if window_id and HAS_WIN32:
+                                        try:
+                                            hwnd = int(window_id)
+                                            # Focus window
+                                            if win32gui.IsIconic(hwnd):
+                                                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                                            win32gui.SetForegroundWindow(hwnd)
+                                            await asyncio.sleep(0.05)
+                                            # Convert delta to scroll clicks (negative = scroll down)
+                                            scroll_clicks = int(delta_y / 30)
+                                            if scroll_clicks != 0:
+                                                pyautogui.scroll(-scroll_clicks)
+                                                print(f"[SCROLL] Scrolled {-scroll_clicks} clicks")
+                                        except Exception as e:
+                                            print(f"[SCROLL] Error: {e}")
 
                             elif msg.type == aiohttp.WSMsgType.ERROR:
                                 print(f"WebSocket error: {ws.exception()}")
