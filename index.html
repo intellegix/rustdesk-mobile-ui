@@ -2769,14 +2769,18 @@
         }
 
         function setupTerminalKeyboard() {
+            console.log('[SETUP] Setting up terminal keyboard...');
+
             // Quick keys (arrows, tab, ctrl combos)
-            document.querySelectorAll('.term-key').forEach(btn => {
+            const quickKeys = document.querySelectorAll('.term-key');
+            console.log('[SETUP] Found', quickKeys.length, 'quick keys');
+            quickKeys.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const key = btn.dataset.key;
                     const ctrl = btn.dataset.ctrl === 'true';
                     const alt = btn.dataset.alt === 'true';
                     const shift = btn.dataset.shift === 'true';
-
+                    console.log('[SETUP] Quick key clicked:', key);
                     sendTerminalKeystroke(key, { ctrl, alt, shift });
                 });
             });
@@ -2785,20 +2789,33 @@
             const termInput = document.getElementById('term-input');
             const termSend = document.getElementById('term-send');
 
-            termSend.addEventListener('click', () => {
-                sendTerminalText(termInput.value);
-                termInput.value = '';
-                termInput.focus();
-            });
+            console.log('[SETUP] termInput:', termInput ? 'found' : 'NOT FOUND');
+            console.log('[SETUP] termSend:', termSend ? 'found' : 'NOT FOUND');
+
+            if (termSend) {
+                termSend.addEventListener('click', () => {
+                    console.log('[SETUP] Send button clicked, value:', termInput?.value);
+                    sendTerminalText(termInput?.value || '');
+                    if (termInput) {
+                        termInput.value = '';
+                        termInput.focus();
+                    }
+                });
+            }
 
             // Enter key in input field
-            termInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    sendTerminalText(termInput.value);
-                    termInput.value = '';
-                }
-            });
+            if (termInput) {
+                termInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        console.log('[SETUP] Enter pressed, value:', termInput.value);
+                        sendTerminalText(termInput.value);
+                        termInput.value = '';
+                    }
+                });
+            }
+
+            console.log('[SETUP] Terminal keyboard setup complete');
         }
 
         function setupTerminalControls() {
