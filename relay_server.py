@@ -414,6 +414,17 @@ async def chrome_prev_tab(window_id: str):
     return await relay_to_pc(f"/api/windows/{window_id}/chrome/prev-tab", "POST")
 
 
+# Window snap/split endpoints
+@app.post("/api/windows/{window_id}/snap/left")
+async def window_snap_left(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/snap/left", "POST")
+
+
+@app.post("/api/windows/{window_id}/snap/right")
+async def window_snap_right(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/snap/right", "POST")
+
+
 # Folders API endpoints
 @app.post("/api/folders/search")
 async def folders_search(request: Request):

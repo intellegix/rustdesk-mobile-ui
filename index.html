@@ -2032,6 +2032,13 @@
             height: 24px;
         }
 
+        .zoom-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 4px;
+        }
+
         .zoom-indicator {
             position: absolute;
             top: 16px;
@@ -2328,6 +2335,13 @@
                 </button>
                 <button class="zoom-btn" id="zoom-reset">
                     <i data-lucide="maximize-2"></i>
+                </button>
+                <div class="zoom-divider"></div>
+                <button class="zoom-btn" id="window-split-left" title="Snap left">
+                    <i data-lucide="panel-left"></i>
+                </button>
+                <button class="zoom-btn" id="window-split-right" title="Snap right">
+                    <i data-lucide="panel-right"></i>
                 </button>
             </div>
             <div class="double-tap-hint" id="double-tap-hint">Double-tap to zoom</div>
@@ -4047,6 +4061,21 @@
             document.getElementById('zoom-reset').addEventListener('click', () => {
                 if (streamController.gestureHandler) {
                     streamController.gestureHandler.reset();
+                }
+            });
+
+            // Window split controls
+            document.getElementById('window-split-left').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/left`, 'POST');
+                    showToast('Snapped left', 'panel-left');
+                }
+            });
+
+            document.getElementById('window-split-right').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/right`, 'POST');
+                    showToast('Snapped right', 'panel-right');
                 }
             });
         }
