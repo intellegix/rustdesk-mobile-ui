@@ -8,12 +8,13 @@ import asyncio
 import json
 import os
 import secrets
+import hashlib
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Response, Cookie, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -35,6 +36,10 @@ pending_requests: dict[str, asyncio.Future] = {}
 # Simple auth token (set via environment variable)
 AUTH_TOKEN = os.environ.get("RELAY_AUTH_TOKEN", "change-me-in-production")
 
+# Site password protection
+SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "Devops$@2026")
+valid_sessions: set[str] = set()
+
 
 class RelayMessage(BaseModel):
     type: str  # "request", "response", "broadcast"
@@ -42,6 +47,153 @@ class RelayMessage(BaseModel):
     endpoint: Optional[str] = None
     method: Optional[str] = None
     data: Optional[dict] = None
+
+
+def is_authenticated(session_id: str) -> bool:
+    """Check if session is authenticated."""
+    return session_id in valid_sessions
+
+
+LOGIN_PAGE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RustDesk Mobile UI - Login</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: #f97316;
+            font-size: 24px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #9ca3af;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            color: #d1d5db;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="password"]:focus {
+            border-color: #f97316;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #f97316;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #ea580c;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="icon">🔐</div>
+        <h1>RustDesk Mobile UI</h1>
+        <p class="subtitle">Enter password to access</p>
+        {error}
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autofocus>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html>
+"""
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(error: str = ""):
+    """Show login page."""
+    error_html = f'<div class="error">{error}</div>' if error else ""
+    return LOGIN_PAGE.replace("{error}", error_html)
+
+
+@app.post("/login")
+async def login(response: Response, password: str = Form(...)):
+    """Handle login."""
+    if password == SITE_PASSWORD:
+        session_id = secrets.token_hex(32)
+        valid_sessions.add(session_id)
+        resp = RedirectResponse(url="/", status_code=303)
+        resp.set_cookie(key="session", value=session_id, httponly=True, max_age=86400)
+        return resp
+    return RedirectResponse(url="/login?error=Invalid+password", status_code=303)
+
+
+@app.get("/logout")
+async def logout(response: Response, session: str = Cookie(None)):
+    """Handle logout."""
+    if session in valid_sessions:
+        valid_sessions.discard(session)
+    resp = RedirectResponse(url="/login", status_code=303)
+    resp.delete_cookie(key="session")
+    return resp
 
 
 @app.get("/api/health")
@@ -282,8 +434,12 @@ async def web_websocket(websocket: WebSocket):
 
 # Serve frontend
 @app.get("/", response_class=HTMLResponse)
-async def serve_frontend():
-    """Serve the frontend."""
+async def serve_frontend(session: str = Cookie(None)):
+    """Serve the frontend (requires authentication)."""
+    # Check authentication
+    if not is_authenticated(session):
+        return RedirectResponse(url="/login", status_code=303)
+
     # Try to find index.html in the same directory
     import os
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -304,6 +460,7 @@ async def serve_frontend():
         <p style="color: #666; margin-top: 40px;">
             Place index.html in the same directory to serve the mobile UI.
         </p>
+        <p><a href="/logout">Logout</a></p>
     </body>
     </html>
     """)
