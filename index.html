@@ -971,6 +971,104 @@
             color: white;
         }
 
+        .tab-btn.tab-new {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: #22C55E;
+            color: #22C55E;
+        }
+
+        .tab-btn.tab-new:active {
+            background: #22C55E;
+            color: white;
+        }
+
+        .tab-btn.tab-new svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Recent Directories Dialog */
+        .recent-dirs-dialog {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            margin-bottom: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            max-height: 300px;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .recent-dirs-dialog.show {
+            display: block;
+        }
+
+        .recent-dirs-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .recent-dirs-list {
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .recent-dir-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .recent-dir-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-dir-item:active {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .recent-dir-item svg {
+            width: 18px;
+            height: 18px;
+            color: #22C55E;
+            flex-shrink: 0;
+        }
+
+        .recent-dir-item:active svg {
+            color: white;
+        }
+
+        .recent-dir-item span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .no-dirs {
+            padding: 24px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
         .terminal-quick-keys {
             display: flex;
             gap: 8px;
@@ -1800,6 +1898,16 @@
                 <button class="tab-btn" data-tab="4" title="Ctrl+Alt+4">4</button>
                 <button class="tab-btn" data-tab="5" title="Ctrl+Alt+5">5</button>
                 <button class="tab-btn" data-tab="6" title="Ctrl+Alt+6">6</button>
+                <button class="tab-btn tab-new" id="tab-new" title="Recent directories">
+                    <i data-lucide="folder-open"></i>
+                </button>
+            </div>
+            <!-- Recent Directories Dialog -->
+            <div class="recent-dirs-dialog" id="recent-dirs-dialog">
+                <div class="recent-dirs-header">Recent Directories</div>
+                <div class="recent-dirs-list" id="recent-dirs-list">
+                    <!-- Populated dynamically -->
+                </div>
             </div>
             <div class="terminal-quick-keys">
                 <button class="term-key" data-key="ArrowUp" title="Up">↑</button>
@@ -1895,6 +2003,46 @@
         // Configuration
         const API_BASE = window.location.origin;
         let ws = null;
+
+        // Recent Directories Tracking
+        const RECENT_DIRS_KEY = 'rustdesk-recent-dirs';
+        const MAX_RECENT_DIRS = 10;
+
+        function addRecentDirectory(path) {
+            if (!path || path === '~' || path === '-') return;
+            let dirs = JSON.parse(localStorage.getItem(RECENT_DIRS_KEY) || '[]');
+            // Remove if exists (will re-add at top)
+            dirs = dirs.filter(d => d !== path);
+            // Add to front
+            dirs.unshift(path);
+            // Limit to max
+            dirs = dirs.slice(0, MAX_RECENT_DIRS);
+            localStorage.setItem(RECENT_DIRS_KEY, JSON.stringify(dirs));
+        }
+
+        function getRecentDirectories() {
+            return JSON.parse(localStorage.getItem(RECENT_DIRS_KEY) || '[]');
+        }
+
+        function shortenPath(path) {
+            if (!path) return '';
+            // Replace home directory with ~
+            const homeMatch = path.match(/^(C:\\Users\\[^\\]+|\/home\/[^\/]+|\/Users\/[^\/]+)/i);
+            if (homeMatch) {
+                path = '~' + path.substring(homeMatch[1].length);
+            }
+            // Truncate if too long
+            if (path.length > 40) {
+                path = '...' + path.slice(-37);
+            }
+            return path;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
 
         // Icon mapping for Lucide icons
         const iconMap = {
@@ -2995,6 +3143,15 @@
                 console.log('[TERM] Sending:', JSON.stringify(msg));
                 ws.send(JSON.stringify(msg));
                 showToast('Sent: ' + command, 'send');
+
+                // Track cd commands for recent directories
+                const cdMatch = command.trim().match(/^cd\s+(.+)$/i);
+                if (cdMatch) {
+                    const path = cdMatch[1].replace(/^["']|["']$/g, '').trim();
+                    if (path && path !== '-' && path !== '~') {
+                        addRecentDirectory(path);
+                    }
+                }
             } else {
                 console.log('[TERM] WebSocket not open, state:', ws ? ws.readyState : 'null');
                 showToast('Not connected', 'wifi-off');
@@ -3247,6 +3404,59 @@
             });
         }
 
+        // Setup Recent Directories Dialog
+        function setupRecentDirectoriesDialog() {
+            const newTabBtn = document.getElementById('tab-new');
+            const dirsDialog = document.getElementById('recent-dirs-dialog');
+
+            if (!newTabBtn || !dirsDialog) {
+                console.log('[DIRS] Dialog elements not found');
+                return;
+            }
+
+            newTabBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const dirs = getRecentDirectories();
+                renderDirectoryList(dirs);
+                dirsDialog.classList.toggle('show');
+            });
+
+            // Close dialog when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!dirsDialog.contains(e.target) && e.target !== newTabBtn) {
+                    dirsDialog.classList.remove('show');
+                }
+            });
+        }
+
+        function renderDirectoryList(dirs) {
+            const list = document.getElementById('recent-dirs-list');
+            if (!list) return;
+
+            if (dirs.length === 0) {
+                list.innerHTML = '<div class="no-dirs">No recent directories</div>';
+                return;
+            }
+
+            list.innerHTML = dirs.map(dir => `
+                <button class="recent-dir-item" data-path="${escapeHtml(dir)}">
+                    <i data-lucide="folder"></i>
+                    <span>${shortenPath(dir)}</span>
+                </button>
+            `).join('');
+            lucide.createIcons();
+
+            // Add click handlers
+            list.querySelectorAll('.recent-dir-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const path = item.dataset.path;
+                    // Send cd command to terminal
+                    sendTerminalCommand(`cd "${path}"`);
+                    document.getElementById('recent-dirs-dialog').classList.remove('show');
+                });
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             setupNavigation();
@@ -3254,6 +3464,7 @@
             setupStreamControls();
             setupTerminalControls();
             setupTerminalKeyboard();
+            setupRecentDirectoriesDialog();
             initIcons();
 
             await loadApps();
