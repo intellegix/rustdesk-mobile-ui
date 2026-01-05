@@ -33,11 +33,9 @@ pc_connection: Optional[WebSocket] = None
 web_connections: list[WebSocket] = []
 pending_requests: dict[str, asyncio.Future] = {}
 
-# Simple auth token (set via environment variable)
-AUTH_TOKEN = os.environ.get("RELAY_AUTH_TOKEN", "change-me-in-production")
-
-# Site password protection
+# Shared password for both site access and relay authentication
 SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "Devops$@2026")
+AUTH_TOKEN = SITE_PASSWORD  # Use same password for relay auth
 valid_sessions: set[str] = set()
 
 
