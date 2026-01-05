@@ -608,6 +608,238 @@
             font-weight: 500;
         }
 
+        /* Folders View */
+        #folders-view {
+            padding: 16px;
+        }
+
+        .folders-search-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .folders-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .folders-header svg {
+            width: 28px;
+            height: 28px;
+            color: var(--accent-orange);
+        }
+
+        .folders-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .folders-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .folders-input-container {
+            display: flex;
+            gap: 12px;
+        }
+
+        .folders-input {
+            flex: 1;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 16px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .folders-input:focus {
+            border-color: var(--accent-orange);
+        }
+
+        .folders-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .folders-search-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: var(--accent-orange);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .folders-search-btn:active {
+            transform: scale(0.95);
+        }
+
+        .folders-search-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .folders-search-btn svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .folders-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .folders-loading .spinner {
+            width: 24px;
+            height: 24px;
+        }
+
+        .folders-result {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            border: 1px solid var(--accent-green);
+        }
+
+        .folders-result-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .folders-result-header svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-green);
+        }
+
+        #folders-result-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .folders-open-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .folders-open-btn:active {
+            transform: scale(0.98);
+        }
+
+        .folders-open-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .folders-error {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 12px;
+            border: 1px solid var(--accent-red);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--accent-red);
+        }
+
+        .folders-error svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .folders-recent-section {
+            padding: 0 4px;
+        }
+
+        .folders-recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .folder-recent-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .folder-recent-item:active {
+            background: var(--bg-elevated);
+        }
+
+        .folder-recent-item svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-orange);
+            flex-shrink: 0;
+        }
+
+        .folder-recent-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .folder-recent-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .folder-recent-path {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* System Info Card */
         .system-info-card {
             background: var(--bg-secondary);
@@ -1880,6 +2112,10 @@
                 <i data-lucide="sliders-horizontal"></i>
                 <span>Controls</span>
             </div>
+            <div class="nav-tab" data-view="folders">
+                <i data-lucide="folder-search"></i>
+                <span>Folders</span>
+            </div>
         </nav>
 
         <!-- Content Area -->
@@ -2004,6 +2240,49 @@
                             <i data-lucide="refresh-cw"></i>
                             <span class="quick-action-label">Refresh</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folders View -->
+            <div class="view" id="folders-view">
+                <div class="folders-search-section">
+                    <div class="folders-header">
+                        <i data-lucide="folder-search"></i>
+                        <h2>Quick Folder Access</h2>
+                    </div>
+                    <p class="folders-description">Describe the folder you want to open and Claude will find and open it for you.</p>
+                    <div class="folders-input-container">
+                        <input type="text" id="folder-search-input" class="folders-input" placeholder="e.g., 'my downloads' or 'project files'">
+                        <button class="folders-search-btn" id="folder-search-btn">
+                            <i data-lucide="search"></i>
+                        </button>
+                    </div>
+                    <div class="folders-loading" id="folders-loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Claude is searching...</span>
+                    </div>
+                    <div class="folders-result" id="folders-result" style="display: none;">
+                        <div class="folders-result-header">
+                            <i data-lucide="folder-open"></i>
+                            <span id="folders-result-path"></span>
+                        </div>
+                        <button class="folders-open-btn" id="folders-open-btn">
+                            <i data-lucide="external-link"></i>
+                            Open Folder
+                        </button>
+                    </div>
+                    <div class="folders-error" id="folders-error" style="display: none;">
+                        <i data-lucide="alert-circle"></i>
+                        <span id="folders-error-msg">Could not find folder</span>
+                    </div>
+                </div>
+
+                <!-- Recent Folders -->
+                <div class="folders-recent-section">
+                    <div class="section-title">Recent Folders</div>
+                    <div class="folders-recent-list" id="folders-recent-list">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
             </div>
@@ -2388,7 +2667,7 @@
             
             function handleSwipe() {
                 const diff = touchStartX - touchEndX;
-                const viewOrder = ['apps', 'windows', 'controls'];
+                const viewOrder = ['apps', 'windows', 'controls', 'folders'];
                 const activeTab = document.querySelector('.nav-tab.active');
                 const currentIndex = viewOrder.indexOf(activeTab.dataset.view);
                 
@@ -2658,6 +2937,145 @@
                     btn.classList.remove('refreshing');
                     showToast('Refreshed', 'refresh-cw');
                     break;
+            }
+        }
+
+        // Folders search state
+        let currentFolderPath = null;
+        let recentFolders = JSON.parse(localStorage.getItem('recentFolders') || '[]');
+
+        function setupFolders() {
+            const searchInput = document.getElementById('folder-search-input');
+            const searchBtn = document.getElementById('folder-search-btn');
+            const loadingEl = document.getElementById('folders-loading');
+            const resultEl = document.getElementById('folders-result');
+            const errorEl = document.getElementById('folders-error');
+            const resultPath = document.getElementById('folders-result-path');
+            const openBtn = document.getElementById('folders-open-btn');
+            const recentList = document.getElementById('folders-recent-list');
+
+            // Search on button click
+            searchBtn.addEventListener('click', () => searchFolder());
+
+            // Search on Enter key
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchFolder();
+                }
+            });
+
+            // Open folder button
+            openBtn.addEventListener('click', () => {
+                if (currentFolderPath) {
+                    openFolder(currentFolderPath);
+                }
+            });
+
+            // Render recent folders
+            renderRecentFolders();
+
+            async function searchFolder() {
+                const query = searchInput.value.trim();
+                if (!query) {
+                    showToast('Enter a folder description', 'alert-circle');
+                    return;
+                }
+
+                // Hide previous results
+                resultEl.style.display = 'none';
+                errorEl.style.display = 'none';
+                loadingEl.style.display = 'flex';
+                searchBtn.disabled = true;
+
+                try {
+                    const response = await api('/api/folders/search', 'POST', { query });
+
+                    loadingEl.style.display = 'none';
+                    searchBtn.disabled = false;
+
+                    if (response && response.path) {
+                        currentFolderPath = response.path;
+                        resultPath.textContent = response.path;
+                        resultEl.style.display = 'block';
+
+                        // Add to recent if found
+                        addToRecent(query, response.path);
+                    } else {
+                        document.getElementById('folders-error-msg').textContent =
+                            response?.error || 'Could not find matching folder';
+                        errorEl.style.display = 'flex';
+                    }
+                } catch (err) {
+                    loadingEl.style.display = 'none';
+                    searchBtn.disabled = false;
+                    document.getElementById('folders-error-msg').textContent =
+                        'Error searching for folder';
+                    errorEl.style.display = 'flex';
+                }
+            }
+
+            async function openFolder(path) {
+                try {
+                    await api('/api/folders/open', 'POST', { path });
+                    showToast('Folder opened', 'folder-open');
+                } catch (err) {
+                    showToast('Could not open folder', 'alert-circle');
+                }
+            }
+
+            function addToRecent(query, path) {
+                // Remove if already exists
+                recentFolders = recentFolders.filter(f => f.path !== path);
+
+                // Add to front
+                recentFolders.unshift({ query, path, timestamp: Date.now() });
+
+                // Keep only last 10
+                recentFolders = recentFolders.slice(0, 10);
+
+                // Save to localStorage
+                localStorage.setItem('recentFolders', JSON.stringify(recentFolders));
+
+                // Re-render
+                renderRecentFolders();
+            }
+
+            function renderRecentFolders() {
+                if (recentFolders.length === 0) {
+                    recentList.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                            No recent folders
+                        </div>
+                    `;
+                    return;
+                }
+
+                recentList.innerHTML = recentFolders.map(folder => `
+                    <div class="folder-recent-item" data-path="${folder.path.replace(/"/g, '&quot;')}">
+                        <i data-lucide="folder"></i>
+                        <div class="folder-recent-info">
+                            <div class="folder-recent-name">${escapeHtml(folder.query)}</div>
+                            <div class="folder-recent-path">${escapeHtml(folder.path)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Re-init icons
+                lucide.createIcons();
+
+                // Add click handlers
+                recentList.querySelectorAll('.folder-recent-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const path = item.dataset.path;
+                        openFolder(path);
+                    });
+                });
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
             }
         }
 
@@ -3990,6 +4408,7 @@
             setupTerminalControls();
             setupTerminalKeyboard();
             setupRecentDirectoriesDialog();
+            setupFolders();
             initIcons();
 
             await loadApps();

@@ -466,9 +466,123 @@ class RelayClient:
 
                 return {"status": "success" if success else "failed"}
 
+            # Folders API endpoints
+            elif endpoint == "/api/folders/search" and method == "POST":
+                query = data.get("query", "") if data else ""
+                if not query:
+                    return {"error": "No query provided"}
+                result = await self.search_folder_with_claude(query)
+                return result
+
+            elif endpoint == "/api/folders/open" and method == "POST":
+                path = data.get("path", "") if data else ""
+                if not path:
+                    return {"error": "No path provided"}
+                result = self.open_folder(path)
+                return result
+
             else:
                 return {"error": f"Unknown endpoint: {endpoint}"}
 
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def search_folder_with_claude(self, query: str) -> dict:
+        """Use Claude API to find a folder based on user description."""
+        try:
+            import anthropic
+
+            # Get API key from environment
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not api_key:
+                return {"error": "ANTHROPIC_API_KEY not set in environment"}
+
+            # Get common folder locations to help Claude
+            home = os.path.expanduser("~")
+            common_paths = [
+                f"User home: {home}",
+                f"Desktop: {os.path.join(home, 'Desktop')}",
+                f"Documents: {os.path.join(home, 'Documents')}",
+                f"Downloads: {os.path.join(home, 'Downloads')}",
+                f"Pictures: {os.path.join(home, 'Pictures')}",
+                f"Videos: {os.path.join(home, 'Videos')}",
+                f"Music: {os.path.join(home, 'Music')}",
+            ]
+
+            # Add Dropbox path if it exists
+            dropbox_path = os.path.join(home, "ASR Dropbox")
+            if os.path.exists(dropbox_path):
+                common_paths.append(f"Dropbox: {dropbox_path}")
+
+            # List top-level folders in common locations
+            folder_listing = []
+            for path in [home, os.path.join(home, "Documents"), os.path.join(home, "Desktop"), dropbox_path]:
+                if os.path.exists(path):
+                    try:
+                        folders = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f)) and not f.startswith('.')]
+                        folder_listing.append(f"\nFolders in {path}:\n" + "\n".join(f"  - {f}" for f in folders[:20]))
+                    except PermissionError:
+                        pass
+
+            context = "\n".join(common_paths) + "\n" + "\n".join(folder_listing)
+
+            client = anthropic.Anthropic(api_key=api_key)
+            message = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=256,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""Based on the user's description, determine the most likely folder path on this Windows PC.
+
+Common locations:
+{context}
+
+User wants to open: "{query}"
+
+Respond with ONLY the full folder path that best matches their description. No explanation, just the path.
+If you can't determine a specific path, respond with the most logical location based on their description.
+Always use backslashes for Windows paths."""
+                    }
+                ]
+            )
+
+            # Extract the path from Claude's response
+            path = message.content[0].text.strip()
+
+            # Clean up the path (remove quotes if present)
+            path = path.strip('"\'')
+
+            # Verify the path exists
+            if os.path.exists(path) and os.path.isdir(path):
+                return {"path": path}
+            else:
+                # Try to find a close match
+                if os.path.exists(os.path.dirname(path)):
+                    return {"path": path, "note": "Path may not exist yet"}
+                return {"error": f"Folder not found: {path}"}
+
+        except ImportError:
+            return {"error": "anthropic library not installed. Run: pip install anthropic"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def open_folder(self, path: str) -> dict:
+        """Open a folder in Windows Explorer."""
+        try:
+            # Normalize the path
+            path = os.path.normpath(path)
+
+            if not os.path.exists(path):
+                return {"error": f"Path does not exist: {path}"}
+
+            if not os.path.isdir(path):
+                # If it's a file, open its parent directory
+                path = os.path.dirname(path)
+
+            # Open in Explorer
+            subprocess.Popen(['explorer', path])
+            return {"status": "success", "path": path}
         except Exception as e:
             return {"error": str(e)}
 
