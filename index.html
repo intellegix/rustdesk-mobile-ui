@@ -1082,6 +1082,30 @@
             color: var(--accent-red);
         }
 
+        .term-upload {
+            width: 44px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid #22C55E;
+            border-radius: 10px;
+            color: #22C55E;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .term-upload:active {
+            transform: scale(0.92);
+            background: #22C55E;
+            color: white;
+        }
+
+        .term-upload svg {
+            width: 18px;
+            height: 18px;
+        }
+
         /* Stream Footer */
         .stream-footer {
             display: flex;
@@ -1130,6 +1154,61 @@
 
         .stream-action.danger svg {
             color: #EF4444;
+        }
+
+        /* Three-dot popup menu */
+        .stream-menu-container {
+            position: relative;
+            flex: 1;
+        }
+
+        .stream-menu {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 160px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+            z-index: 100;
+        }
+
+        .stream-menu.show {
+            display: block;
+        }
+
+        .stream-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 15px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .stream-menu-item:active {
+            background: var(--bg-secondary);
+        }
+
+        .stream-menu-item.danger {
+            color: #EF4444;
+            border-top: 1px solid var(--border-color);
+            margin-top: 4px;
+            padding-top: 14px;
+        }
+
+        .stream-menu-item svg {
+            width: 20px;
+            height: 20px;
         }
 
         /* ========== MOBILE RESPONSIVE STYLES ========== */
@@ -1705,6 +1784,10 @@
                 <button class="term-send" id="term-send">
                     <i data-lucide="corner-down-left"></i>
                 </button>
+                <button class="term-upload" id="term-upload" title="Upload & paste image">
+                    <i data-lucide="image-plus"></i>
+                </button>
+                <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
                 <button class="term-clear-remote" id="term-clear-remote" title="Clear desktop line">
                     <i data-lucide="trash-2"></i>
                 </button>
@@ -1717,18 +1800,26 @@
                 <i data-lucide="maximize-2"></i>
                 <span class="stream-action-label">Focus</span>
             </button>
-            <button class="stream-action" id="stream-minimize">
-                <i data-lucide="minus"></i>
-                <span class="stream-action-label">Minimize</span>
-            </button>
-            <button class="stream-action" id="stream-maximize">
-                <i data-lucide="square"></i>
-                <span class="stream-action-label">Maximize</span>
-            </button>
-            <button class="stream-action danger" id="stream-close">
-                <i data-lucide="x"></i>
-                <span class="stream-action-label">Close</span>
-            </button>
+            <div class="stream-menu-container">
+                <button class="stream-action" id="stream-menu-toggle">
+                    <i data-lucide="more-vertical"></i>
+                    <span class="stream-action-label">Menu</span>
+                </button>
+                <div class="stream-menu" id="stream-menu">
+                    <button class="stream-menu-item" id="stream-maximize">
+                        <i data-lucide="square"></i>
+                        <span>Maximize</span>
+                    </button>
+                    <button class="stream-menu-item" id="stream-minimize">
+                        <i data-lucide="minus"></i>
+                        <span>Minimize</span>
+                    </button>
+                    <button class="stream-menu-item danger" id="stream-close">
+                        <i data-lucide="x"></i>
+                        <span>Close Window</span>
+                    </button>
+                </div>
+            </div>
         </footer>
     </div>
 
@@ -2763,7 +2854,33 @@
 
             document.getElementById('stream-close').addEventListener('click', () => {
                 streamController.closeWindow();
+                document.getElementById('stream-menu').classList.remove('show');
             });
+
+            // Menu toggle
+            const menuToggle = document.getElementById('stream-menu-toggle');
+            const streamMenu = document.getElementById('stream-menu');
+
+            if (menuToggle && streamMenu) {
+                menuToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    streamMenu.classList.toggle('show');
+                });
+
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!streamMenu.contains(e.target) && e.target !== menuToggle) {
+                        streamMenu.classList.remove('show');
+                    }
+                });
+
+                // Close menu after action
+                ['stream-maximize', 'stream-minimize'].forEach(id => {
+                    document.getElementById(id).addEventListener('click', () => {
+                        streamMenu.classList.remove('show');
+                    });
+                });
+            }
 
             // Browser controls
             document.getElementById('browser-back').addEventListener('click', () => {
@@ -2904,10 +3021,12 @@
                     if (cmd) {
                         sendTerminalCommand(cmd);
                         termInput.value = '';
-                        termInput.blur(); // Collapse mobile keyboard
                     } else {
-                        showToast('Enter a command', 'alert-circle');
+                        // Send Enter keystroke even when empty (for prompts)
+                        sendTerminalKey('Enter', {});
+                        showToast('Enter', 'corner-down-left');
                     }
+                    termInput.blur(); // Collapse mobile keyboard
                 });
             }
 
@@ -2934,6 +3053,44 @@
                 });
             }
 
+            // Image upload button
+            const uploadBtn = document.getElementById('term-upload');
+            const imageInput = document.getElementById('image-upload-input');
+            if (uploadBtn && imageInput) {
+                uploadBtn.addEventListener('click', () => {
+                    imageInput.click();
+                });
+
+                imageInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    showToast('Uploading...', 'upload');
+
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        const base64 = reader.result.split(',')[1];
+                        try {
+                            const response = await fetch('/api/paste-image', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ image: base64 })
+                            });
+                            if (response.ok) {
+                                showToast('Image pasted!', 'check');
+                            } else {
+                                showToast('Paste failed', 'x');
+                            }
+                        } catch (err) {
+                            console.error('Image paste error:', err);
+                            showToast('Paste failed', 'x');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                    imageInput.value = ''; // Reset for next upload
+                });
+            }
+
             // Enter key in input field
             if (termInput) {
                 termInput.addEventListener('keydown', (e) => {
@@ -2944,8 +3101,12 @@
                         if (cmd) {
                             sendTerminalCommand(cmd);
                             termInput.value = '';
-                            termInput.blur(); // Collapse mobile keyboard
+                        } else {
+                            // Send Enter keystroke even when empty (for prompts)
+                            sendTerminalKey('Enter', {});
+                            showToast('Enter', 'corner-down-left');
                         }
+                        termInput.blur(); // Collapse mobile keyboard
                     }
                 });
             }

@@ -330,6 +330,42 @@ class RelayClient:
                 pyperclip.copy(content)
                 return {"status": "copied"}
 
+            elif endpoint == "/api/paste-image" and method == "POST":
+                # Paste image to clipboard and simulate Ctrl+V
+                try:
+                    import base64
+                    import io
+                    from PIL import Image
+                    import win32clipboard
+
+                    image_b64 = data.get("image", "") if data else ""
+                    if not image_b64:
+                        return {"error": "No image data"}
+
+                    # Decode base64 to image
+                    image_data = base64.b64decode(image_b64)
+                    image = Image.open(io.BytesIO(image_data))
+
+                    # Convert to BMP format for clipboard
+                    output = io.BytesIO()
+                    image.convert("RGB").save(output, "BMP")
+                    bmp_data = output.getvalue()[14:]  # Strip BMP header
+                    output.close()
+
+                    # Copy to clipboard
+                    win32clipboard.OpenClipboard()
+                    win32clipboard.EmptyClipboard()
+                    win32clipboard.SetClipboardData(win32clipboard.CF_DIB, bmp_data)
+                    win32clipboard.CloseClipboard()
+
+                    # Simulate Ctrl+V to paste
+                    time.sleep(0.1)
+                    pyautogui.hotkey('ctrl', 'v')
+
+                    return {"status": "pasted"}
+                except Exception as e:
+                    return {"error": str(e)}
+
             elif endpoint == "/api/rustdesk/status" and method == "GET":
                 return get_rustdesk_status()
 

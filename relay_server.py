@@ -329,6 +329,13 @@ async def set_clipboard(request: Request):
     return await relay_to_pc("/api/clipboard", "POST", data)
 
 
+@app.post("/api/paste-image")
+async def paste_image(request: Request):
+    """Paste an image to the desktop clipboard and simulate Ctrl+V."""
+    data = await request.json()
+    return await relay_to_pc("/api/paste-image", "POST", data)
+
+
 @app.get("/api/rustdesk/status")
 async def get_rustdesk_status():
     return await relay_to_pc("/api/rustdesk/status", "GET")
