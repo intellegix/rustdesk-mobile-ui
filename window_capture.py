@@ -277,6 +277,29 @@ class WindowCapture:
             return False
 
 
+def _focus_window(hwnd: int):
+    """Focus a window using multiple methods for reliability."""
+    import time
+    try:
+        # Restore if minimized
+        if win32gui.IsIconic(hwnd):
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            time.sleep(0.1)
+
+        # Try SetForegroundWindow
+        try:
+            win32gui.SetForegroundWindow(hwnd)
+        except:
+            # Alternative: use keybd_event trick
+            import ctypes
+            ctypes.windll.user32.keybd_event(0, 0, 0, 0)
+            win32gui.SetForegroundWindow(hwnd)
+
+        time.sleep(0.05)
+    except Exception as e:
+        print(f"_focus_window error: {e}")
+
+
 class ChromeController:
     """Controls Chrome browser windows via keyboard automation."""
 
@@ -295,32 +318,31 @@ class ChromeController:
             return False
 
         try:
-            # Focus the window first
-            if win32gui.IsIconic(hwnd):
-                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-            win32gui.SetForegroundWindow(hwnd)
-
             import time
-            time.sleep(0.1)  # Brief delay for focus
+            import pyautogui
+            import pyperclip
+
+            # Focus the window first
+            _focus_window(hwnd)
+            time.sleep(0.1)
 
             # Send Ctrl+L to focus address bar
-            _send_key_combo(hwnd, 'l', ctrl=True)
+            pyautogui.hotkey('ctrl', 'l')
             time.sleep(0.05)
 
             # Clear any existing text
-            _send_key_combo(hwnd, 'a', ctrl=True)
+            pyautogui.hotkey('ctrl', 'a')
             time.sleep(0.02)
 
-            # Type the URL using clipboard (faster than SendMessage)
-            import pyperclip
+            # Type the URL using clipboard (faster than typing)
             old_clipboard = pyperclip.paste()
             pyperclip.copy(url)
-            _send_key_combo(hwnd, 'v', ctrl=True)
+            pyautogui.hotkey('ctrl', 'v')
             time.sleep(0.02)
             pyperclip.copy(old_clipboard)  # Restore clipboard
 
             # Press Enter
-            _send_key(hwnd, win32con.VK_RETURN)
+            pyautogui.press('enter')
 
             return True
         except Exception as e:
@@ -333,10 +355,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key_combo(hwnd, win32con.VK_LEFT, alt=True)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.hotkey('alt', 'left')
             return True
-        except:
+        except Exception as e:
+            print(f"go_back error: {e}")
             return False
 
     @staticmethod
@@ -345,10 +369,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key_combo(hwnd, win32con.VK_RIGHT, alt=True)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.hotkey('alt', 'right')
             return True
-        except:
+        except Exception as e:
+            print(f"go_forward error: {e}")
             return False
 
     @staticmethod
@@ -357,10 +383,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key(hwnd, win32con.VK_F5)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.press('f5')
             return True
-        except:
+        except Exception as e:
+            print(f"refresh error: {e}")
             return False
 
     @staticmethod
@@ -369,10 +397,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key_combo(hwnd, 't', ctrl=True)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.hotkey('ctrl', 't')
             return True
-        except:
+        except Exception as e:
+            print(f"new_tab error: {e}")
             return False
 
     @staticmethod
@@ -381,10 +411,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key_combo(hwnd, 'w', ctrl=True)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.hotkey('ctrl', 'w')
             return True
-        except:
+        except Exception as e:
+            print(f"close_tab error: {e}")
             return False
 
     @staticmethod
@@ -393,10 +425,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key_combo(hwnd, win32con.VK_TAB, ctrl=True)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.hotkey('ctrl', 'tab')
             return True
-        except:
+        except Exception as e:
+            print(f"next_tab error: {e}")
             return False
 
     @staticmethod
@@ -405,10 +439,12 @@ class ChromeController:
         if not HAS_WIN32:
             return False
         try:
-            win32gui.SetForegroundWindow(hwnd)
-            _send_key_combo(hwnd, win32con.VK_TAB, ctrl=True, shift=True)
+            _focus_window(hwnd)
+            import pyautogui
+            pyautogui.hotkey('ctrl', 'shift', 'tab')
             return True
-        except:
+        except Exception as e:
+            print(f"prev_tab error: {e}")
             return False
 
 
