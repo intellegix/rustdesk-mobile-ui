@@ -1906,15 +1906,8 @@
             // Click to open stream view or terminal
             card.querySelector('.window-info').addEventListener('click', () => {
                 const cls = (win.class || '').toLowerCase();
-                const isTerminal = ['cmd', 'powershell', 'pwsh', 'terminal', 'windowsterminal', 'conhost', 'mintty', 'gnome-terminal', 'konsole'].some(t => cls.includes(t));
-
-                if (isTerminal) {
-                    // Open native terminal UI
-                    terminalController.open(win.id, win.title);
-                } else {
-                    // Open stream view for other windows
-                    streamController.openStream(win.id, win.title, win.class);
-                }
+                // All windows use stream view - terminals get keyboard overlay on top
+                streamController.openStream(win.id, win.title, win.class);
             });
             card.querySelector('.minimize').addEventListener('click', (e) => {
                 e.stopPropagation();
