@@ -339,6 +339,8 @@ class RelayClient:
                     import win32clipboard
 
                     image_b64 = data.get("image", "") if data else ""
+                    window_id = data.get("window_id", "") if data else ""
+
                     if not image_b64:
                         return {"error": "No image data"}
 
@@ -357,6 +359,17 @@ class RelayClient:
                     win32clipboard.EmptyClipboard()
                     win32clipboard.SetClipboardData(win32clipboard.CF_DIB, bmp_data)
                     win32clipboard.CloseClipboard()
+
+                    # Focus the target window before pasting
+                    if window_id and HAS_WIN32:
+                        try:
+                            hwnd = int(window_id)
+                            if win32gui.IsIconic(hwnd):
+                                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                            win32gui.SetForegroundWindow(hwnd)
+                            time.sleep(0.15)  # Give window time to focus
+                        except Exception as e:
+                            print(f"[PASTE-IMAGE] Could not focus window: {e}")
 
                     # Simulate Ctrl+V to paste
                     time.sleep(0.1)

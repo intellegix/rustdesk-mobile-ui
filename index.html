@@ -2685,6 +2685,7 @@
                 const badge = document.getElementById('stream-type-badge');
                 const browserControls = document.getElementById('browser-controls');
                 const terminalKeyboard = document.getElementById('terminal-keyboard');
+                const zoomControls = document.getElementById('zoom-controls');
 
                 console.log('[STREAM] Window type:', this.windowType);
                 badge.className = `stream-type-badge ${this.windowType}`;
@@ -2694,10 +2695,13 @@
                 if (this.windowType === 'browser') {
                     browserControls.classList.add('show');
                     terminalKeyboard.classList.remove('show');
+                    zoomControls.style.display = 'flex';
                 } else {
                     // Show terminal keyboard for all non-browser windows (terminal, generic, etc)
                     browserControls.classList.remove('show');
                     terminalKeyboard.classList.add('show');
+                    // Hide zoom controls when keyboard is visible to prevent blocking
+                    zoomControls.style.display = 'none';
                     // Focus input after a short delay
                     setTimeout(() => document.getElementById('term-input').focus(), 100);
                 }
@@ -3065,6 +3069,13 @@
                     const file = e.target.files[0];
                     if (!file) return;
 
+                    // Get current window ID from stream manager
+                    const windowId = streamManager.currentWindowId;
+                    if (!windowId) {
+                        showToast('No window selected', 'x');
+                        return;
+                    }
+
                     showToast('Uploading...', 'upload');
 
                     const reader = new FileReader();
@@ -3074,12 +3085,13 @@
                             const response = await fetch('/api/paste-image', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ image: base64 })
+                                body: JSON.stringify({ image: base64, window_id: windowId })
                             });
                             if (response.ok) {
                                 showToast('Image pasted!', 'check');
                             } else {
-                                showToast('Paste failed', 'x');
+                                const result = await response.json();
+                                showToast(result.error || 'Paste failed', 'x');
                             }
                         } catch (err) {
                             console.error('Image paste error:', err);
