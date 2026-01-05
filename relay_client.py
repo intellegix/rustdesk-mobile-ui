@@ -574,6 +574,104 @@ class RelayClient:
         for session_id in list(self.terminal_sessions.keys()):
             await self.stop_terminal(session_id)
 
+    # ========== KEYSTROKE FORWARDING ==========
+
+    async def send_keystroke_to_window(self, window_id: str, key: str, modifiers: dict):
+        """Send a keystroke to an actual window using PostMessage."""
+        if not HAS_WIN32:
+            print("[KEYSTROKE] pywin32 not available")
+            return
+
+        try:
+            import win32api
+            import time
+
+            # Parse window ID (hex string to int)
+            if window_id.startswith("0x"):
+                hwnd = int(window_id, 16)
+            else:
+                hwnd = int(window_id)
+
+            # Focus the window first
+            try:
+                win32gui.SetForegroundWindow(hwnd)
+                time.sleep(0.05)
+            except Exception as e:
+                print(f"[KEYSTROKE] Could not focus window: {e}")
+
+            # Get modifier states
+            ctrl = modifiers.get("ctrl", False)
+            alt = modifiers.get("alt", False)
+            shift = modifiers.get("shift", False)
+
+            # Convert key to virtual key code
+            vk_code = self._key_to_vk(key)
+            if vk_code is None:
+                print(f"[KEYSTROKE] Unknown key: {key}")
+                return
+
+            # Press modifiers
+            if ctrl:
+                win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
+            if alt:
+                win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_MENU, 0)
+            if shift:
+                win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_SHIFT, 0)
+
+            time.sleep(0.01)
+
+            # Send key press and release
+            win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, vk_code, 0)
+            win32gui.PostMessage(hwnd, win32con.WM_KEYUP, vk_code, 0)
+
+            time.sleep(0.01)
+
+            # Release modifiers
+            if shift:
+                win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_SHIFT, 0)
+            if alt:
+                win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_MENU, 0)
+            if ctrl:
+                win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
+
+            print(f"[KEYSTROKE] Sent '{key}' to window {window_id}")
+
+        except Exception as e:
+            print(f"[KEYSTROKE] Error: {e}")
+
+    def _key_to_vk(self, key: str) -> int:
+        """Convert a key name to Windows virtual key code."""
+        # Special keys mapping
+        special_keys = {
+            "Enter": 0x0D,
+            "Tab": 0x09,
+            "Escape": 0x1B,
+            "Backspace": 0x08,
+            "Delete": 0x2E,
+            "ArrowUp": 0x26,
+            "ArrowDown": 0x28,
+            "ArrowLeft": 0x25,
+            "ArrowRight": 0x27,
+            "Home": 0x24,
+            "End": 0x23,
+            "PageUp": 0x21,
+            "PageDown": 0x22,
+            "Space": 0x20,
+            " ": 0x20,
+            "F1": 0x70, "F2": 0x71, "F3": 0x72, "F4": 0x73,
+            "F5": 0x74, "F6": 0x75, "F7": 0x76, "F8": 0x77,
+            "F9": 0x78, "F10": 0x79, "F11": 0x7A, "F12": 0x7B,
+        }
+
+        if key in special_keys:
+            return special_keys[key]
+
+        # Single character - use its ASCII/Unicode value
+        if len(key) == 1:
+            return ord(key.upper())
+
+        return None
+
     async def connect(self):
         """Connect to the relay server."""
         ws_url = self.relay_url.replace("https://", "wss://").replace("http://", "ws://")
@@ -637,16 +735,26 @@ class RelayClient:
                                 # Terminal session handlers
                                 elif msg_type == "terminal_start":
                                     session_id = data.get("session_id", "default")
+                                    print(f"[TERMINAL] Starting session: {session_id}")
                                     await self.start_terminal(session_id)
 
                                 elif msg_type == "terminal_input":
                                     session_id = data.get("session_id", "default")
+                                    print(f"[TERMINAL] Input for {session_id}: {data.get('command', '')}")
                                     command = data.get("command", "")
                                     await self.terminal_execute(session_id, command)
 
                                 elif msg_type == "terminal_stop":
                                     session_id = data.get("session_id", "default")
                                     await self.stop_terminal(session_id)
+
+                                elif msg_type == "terminal_keystroke":
+                                    # Send keystroke to actual terminal window
+                                    window_id = data.get("window_id")
+                                    key = data.get("key", "")
+                                    modifiers = data.get("modifiers", {})
+                                    if window_id and key:
+                                        await self.send_keystroke_to_window(window_id, key, modifiers)
 
                             elif msg.type == aiohttp.WSMsgType.ERROR:
                                 print(f"WebSocket error: {ws.exception()}")

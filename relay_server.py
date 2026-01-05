@@ -530,7 +530,7 @@ async def web_websocket(websocket: WebSocket):
                         "error": "PC not connected"
                     })
 
-            elif msg_type in ("terminal_start", "terminal_input", "terminal_stop"):
+            elif msg_type in ("terminal_start", "terminal_input", "terminal_stop", "terminal_keystroke"):
                 # Forward terminal control messages to PC
                 if pc_connection:
                     try:

@@ -929,6 +929,99 @@
             transform: scale(0.95);
         }
 
+        /* Terminal Keyboard Controls */
+        .terminal-keyboard {
+            display: none;
+            flex-direction: column;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .terminal-keyboard.show {
+            display: flex;
+        }
+
+        .terminal-quick-keys {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .term-key {
+            min-width: 44px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .term-key:active {
+            transform: scale(0.92);
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .term-key.ctrl-key {
+            background: rgba(234, 88, 12, 0.15);
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+        }
+
+        .terminal-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .term-input {
+            flex: 1;
+            padding: 14px 16px;
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: #58a6ff;
+            font-size: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+        }
+
+        .term-input:focus {
+            border-color: var(--accent-orange);
+        }
+
+        .term-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .term-send {
+            width: 50px;
+            background: var(--accent-orange);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .term-send:active {
+            transform: scale(0.92);
+        }
+
+        .term-send svg {
+            width: 22px;
+            height: 22px;
+        }
+
         /* Stream Footer */
         .stream-footer {
             display: flex;
@@ -1521,6 +1614,25 @@
             <div class="browser-url-container">
                 <input type="url" class="browser-url-input" id="browser-url" placeholder="Enter URL...">
                 <button class="browser-go-btn" id="browser-go">Go</button>
+            </div>
+        </div>
+
+        <!-- Terminal Keyboard Controls (shown for terminal windows) -->
+        <div class="terminal-keyboard" id="terminal-keyboard">
+            <div class="terminal-quick-keys">
+                <button class="term-key" data-key="ArrowUp" title="Up">↑</button>
+                <button class="term-key" data-key="ArrowDown" title="Down">↓</button>
+                <button class="term-key" data-key="Tab" title="Tab">Tab</button>
+                <button class="term-key" data-key="Escape" title="Esc">Esc</button>
+                <button class="term-key ctrl-key" data-key="c" data-ctrl="true" title="Ctrl+C">^C</button>
+                <button class="term-key ctrl-key" data-key="d" data-ctrl="true" title="Ctrl+D">^D</button>
+                <button class="term-key ctrl-key" data-key="l" data-ctrl="true" title="Clear">^L</button>
+            </div>
+            <div class="terminal-input-row">
+                <input type="text" class="term-input" id="term-input" placeholder="Type command..." autocomplete="off" autocapitalize="off" spellcheck="false">
+                <button class="term-send" id="term-send">
+                    <i data-lucide="corner-down-left"></i>
+                </button>
             </div>
         </div>
 
@@ -2407,6 +2519,7 @@
             updateWindowTypeUI() {
                 const badge = document.getElementById('stream-type-badge');
                 const browserControls = document.getElementById('browser-controls');
+                const terminalKeyboard = document.getElementById('terminal-keyboard');
 
                 badge.className = `stream-type-badge ${this.windowType}`;
                 badge.textContent = this.windowType.charAt(0).toUpperCase() + this.windowType.slice(1);
@@ -2414,8 +2527,16 @@
                 // Show browser controls for browser windows
                 if (this.windowType === 'browser') {
                     browserControls.classList.add('show');
+                    terminalKeyboard.classList.remove('show');
+                } else if (this.windowType === 'terminal') {
+                    // Show terminal keyboard for terminal windows
+                    browserControls.classList.remove('show');
+                    terminalKeyboard.classList.add('show');
+                    // Focus input after a short delay
+                    setTimeout(() => document.getElementById('term-input').focus(), 100);
                 } else {
                     browserControls.classList.remove('show');
+                    terminalKeyboard.classList.remove('show');
                 }
             }
 
@@ -2608,6 +2729,65 @@
             });
         }
 
+        // Send keystroke to actual terminal window via relay
+        function sendTerminalKeystroke(key, modifiers = {}) {
+            if (!streamController.currentWindowId) return;
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'terminal_keystroke',
+                    window_id: streamController.currentWindowId,
+                    key: key,
+                    modifiers: modifiers
+                }));
+            }
+        }
+
+        // Send text as keystrokes (for typing commands)
+        function sendTerminalText(text) {
+            if (!text) return;
+
+            // Send each character
+            for (const char of text) {
+                sendTerminalKeystroke(char, {});
+            }
+            // Send Enter
+            sendTerminalKeystroke('Enter', {});
+        }
+
+        function setupTerminalKeyboard() {
+            // Quick keys (arrows, tab, ctrl combos)
+            document.querySelectorAll('.term-key').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.key;
+                    const ctrl = btn.dataset.ctrl === 'true';
+                    const alt = btn.dataset.alt === 'true';
+                    const shift = btn.dataset.shift === 'true';
+
+                    sendTerminalKeystroke(key, { ctrl, alt, shift });
+                });
+            });
+
+            // Text input + send button
+            const termInput = document.getElementById('term-input');
+            const termSend = document.getElementById('term-send');
+
+            termSend.addEventListener('click', () => {
+                sendTerminalText(termInput.value);
+                termInput.value = '';
+                termInput.focus();
+            });
+
+            // Enter key in input field
+            termInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendTerminalText(termInput.value);
+                    termInput.value = '';
+                }
+            });
+        }
+
         function setupTerminalControls() {
             // Back button
             document.getElementById('terminal-back').addEventListener('click', () => {
@@ -2653,6 +2833,7 @@
             setupControls();
             setupStreamControls();
             setupTerminalControls();
+            setupTerminalKeyboard();
             initIcons();
 
             await loadApps();
