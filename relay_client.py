@@ -371,14 +371,19 @@ class RelayClient:
                         except Exception as e:
                             print(f"[PASTE-IMAGE] Could not focus window: {e}")
 
-                    # Simulate paste - try both methods for different terminals
+                    # Simulate paste - try multiple methods for different terminals
                     time.sleep(0.1)
-                    # Windows Terminal and some apps use Ctrl+Shift+V
-                    pyautogui.hotkey('ctrl', 'shift', 'v')
-                    time.sleep(0.15)
-                    # Standard Ctrl+V as fallback for other apps
-                    pyautogui.hotkey('ctrl', 'v')
 
+                    # For Windows Terminal / Claude Code, right-click is most reliable for images
+                    pyautogui.click(button='right')
+                    time.sleep(0.2)
+
+                    # Also try keyboard shortcuts as fallback
+                    pyautogui.hotkey('ctrl', 'v')
+                    time.sleep(0.1)
+                    pyautogui.hotkey('ctrl', 'shift', 'v')
+
+                    print(f"[PASTE-IMAGE] Image pasted to window {window_id}")
                     return {"status": "pasted"}
                 except Exception as e:
                     return {"error": str(e)}
