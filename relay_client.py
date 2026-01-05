@@ -38,6 +38,16 @@ import ctypes
 from pathlib import Path
 from datetime import datetime
 import pyperclip
+import time
+
+# Import pyautogui for reliable keyboard input
+try:
+    import pyautogui
+    pyautogui.FAILSAFE = False  # Disable failsafe for headless operation
+    HAS_PYAUTOGUI = True
+except ImportError:
+    HAS_PYAUTOGUI = False
+    print("[WARNING] pyautogui not installed - terminal commands won't work")
 
 # Try Windows imports
 try:
@@ -672,6 +682,122 @@ class RelayClient:
 
         return None
 
+    async def send_terminal_command(self, window_id: str, command: str):
+        """Type a command into the terminal window using pyautogui."""
+        if not HAS_PYAUTOGUI:
+            print("[COMMAND] pyautogui not available")
+            return
+
+        if not HAS_WIN32:
+            print("[COMMAND] pywin32 not available")
+            return
+
+        try:
+            # Parse window ID
+            if window_id.startswith("0x"):
+                hwnd = int(window_id, 16)
+            else:
+                hwnd = int(window_id)
+
+            print(f"[COMMAND] Focusing window {hwnd}...")
+
+            # Focus the window first
+            try:
+                # Restore if minimized
+                if win32gui.IsIconic(hwnd):
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    time.sleep(0.1)
+
+                win32gui.SetForegroundWindow(hwnd)
+                time.sleep(0.15)  # Give window time to come to foreground
+            except Exception as e:
+                print(f"[COMMAND] Could not focus window: {e}")
+                # Try to continue anyway
+
+            # Type the command using pyautogui (more reliable than PostMessage)
+            print(f"[COMMAND] Typing: {command}")
+            pyautogui.typewrite(command, interval=0.02)
+
+            # Press Enter to execute
+            time.sleep(0.05)
+            pyautogui.press('enter')
+
+            print(f"[COMMAND] Sent command to window {hwnd}: {command}")
+
+        except Exception as e:
+            print(f"[COMMAND] Error: {e}")
+
+    async def send_terminal_key(self, window_id: str, key: str, modifiers: dict):
+        """Send a special key (Ctrl+C, arrows, etc) to terminal using pyautogui."""
+        if not HAS_PYAUTOGUI:
+            print("[KEY] pyautogui not available")
+            return
+
+        if not HAS_WIN32:
+            print("[KEY] pywin32 not available")
+            return
+
+        try:
+            # Parse window ID
+            if window_id.startswith("0x"):
+                hwnd = int(window_id, 16)
+            else:
+                hwnd = int(window_id)
+
+            print(f"[KEY] Focusing window {hwnd}...")
+
+            # Focus the window
+            try:
+                if win32gui.IsIconic(hwnd):
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    time.sleep(0.1)
+
+                win32gui.SetForegroundWindow(hwnd)
+                time.sleep(0.1)
+            except Exception as e:
+                print(f"[KEY] Could not focus window: {e}")
+
+            # Map key names to pyautogui key names
+            key_map = {
+                "ArrowUp": "up",
+                "ArrowDown": "down",
+                "ArrowLeft": "left",
+                "ArrowRight": "right",
+                "Enter": "enter",
+                "Tab": "tab",
+                "Escape": "escape",
+                "Backspace": "backspace",
+                "Delete": "delete",
+                "Home": "home",
+                "End": "end",
+                "PageUp": "pageup",
+                "PageDown": "pagedown",
+            }
+
+            pyautogui_key = key_map.get(key, key.lower())
+
+            # Build modifier list
+            mods = []
+            if modifiers.get("ctrl"):
+                mods.append("ctrl")
+            if modifiers.get("alt"):
+                mods.append("alt")
+            if modifiers.get("shift"):
+                mods.append("shift")
+
+            print(f"[KEY] Sending key: {pyautogui_key} with modifiers: {mods}")
+
+            # Send key with modifiers using hotkey
+            if mods:
+                pyautogui.hotkey(*mods, pyautogui_key)
+            else:
+                pyautogui.press(pyautogui_key)
+
+            print(f"[KEY] Sent key {key} to window {hwnd}")
+
+        except Exception as e:
+            print(f"[KEY] Error: {e}")
+
     async def connect(self):
         """Connect to the relay server."""
         ws_url = self.relay_url.replace("https://", "wss://").replace("http://", "ws://")
@@ -749,12 +875,36 @@ class RelayClient:
                                     await self.stop_terminal(session_id)
 
                                 elif msg_type == "terminal_keystroke":
-                                    # Send keystroke to actual terminal window
+                                    # Send keystroke to actual terminal window (legacy)
                                     window_id = data.get("window_id")
                                     key = data.get("key", "")
                                     modifiers = data.get("modifiers", {})
+                                    print(f"[KEYSTROKE] Received: window={window_id}, key={key}, mods={modifiers}")
                                     if window_id and key:
                                         await self.send_keystroke_to_window(window_id, key, modifiers)
+                                    else:
+                                        print(f"[KEYSTROKE] Missing window_id or key")
+
+                                elif msg_type == "terminal_command":
+                                    # Type full command to terminal window using pyautogui
+                                    window_id = data.get("window_id")
+                                    command = data.get("command", "")
+                                    print(f"[COMMAND] Received: window={window_id}, command={command}")
+                                    if window_id and command:
+                                        await self.send_terminal_command(window_id, command)
+                                    else:
+                                        print(f"[COMMAND] Missing window_id or command")
+
+                                elif msg_type == "terminal_key":
+                                    # Send special key to terminal using pyautogui
+                                    window_id = data.get("window_id")
+                                    key = data.get("key", "")
+                                    modifiers = data.get("modifiers", {})
+                                    print(f"[KEY] Received: window={window_id}, key={key}, mods={modifiers}")
+                                    if window_id and key:
+                                        await self.send_terminal_key(window_id, key, modifiers)
+                                    else:
+                                        print(f"[KEY] Missing window_id or key")
 
                             elif msg.type == aiohttp.WSMsgType.ERROR:
                                 print(f"WebSocket error: {ws.exception()}")
@@ -784,6 +934,7 @@ class RelayClient:
         print(f"pycaw: {'OK' if HAS_PYCAW else 'MISSING'}")
         print(f"screen_brightness_control: {'OK' if HAS_SBC else 'MISSING'}")
         print(f"Window Capture: {'OK' if HAS_CAPTURE else 'MISSING'}")
+        print(f"pyautogui: {'OK' if HAS_PYAUTOGUI else 'MISSING'}")
         print(f"Terminal Sessions: OK")
         print("=" * 50)
         print("Press Ctrl+C to stop")

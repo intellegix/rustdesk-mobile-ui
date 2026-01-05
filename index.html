@@ -2729,43 +2729,51 @@
             });
         }
 
-        // Send keystroke to actual terminal window via relay
-        function sendTerminalKeystroke(key, modifiers = {}) {
+        // Send command to actual terminal window via relay (using pyautogui on PC)
+        function sendTerminalCommand(command) {
+            if (!command) {
+                console.log('[TERM] Empty command');
+                return;
+            }
             if (!streamController.currentWindowId) {
                 console.log('[TERM] No window ID');
-                showToast('No window ID', 'alert-circle');
+                showToast('No window selected', 'alert-circle');
                 return;
             }
 
-            console.log('[TERM] Sending keystroke:', key, 'to window:', streamController.currentWindowId);
+            console.log('[TERM] Sending command:', command, 'to window:', streamController.currentWindowId);
 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 const msg = {
-                    type: 'terminal_keystroke',
+                    type: 'terminal_command',
                     window_id: streamController.currentWindowId,
-                    key: key,
-                    modifiers: modifiers
+                    command: command
                 };
                 console.log('[TERM] Sending:', JSON.stringify(msg));
                 ws.send(JSON.stringify(msg));
-                console.log('[TERM] Sent via WebSocket');
+                showToast('Sent: ' + command, 'send');
             } else {
                 console.log('[TERM] WebSocket not open, state:', ws ? ws.readyState : 'null');
-                showToast('WebSocket not connected', 'wifi-off');
+                showToast('Not connected', 'wifi-off');
             }
         }
 
-        // Send text as keystrokes (for typing commands)
-        function sendTerminalText(text) {
-            if (!text) return;
-            showToast(`Sending: ${text}`, 'send');
-
-            // Send each character
-            for (const char of text) {
-                sendTerminalKeystroke(char, {});
+        // Send special key (Ctrl+C, arrows, etc) to terminal
+        function sendTerminalKey(key, modifiers = {}) {
+            if (!streamController.currentWindowId) {
+                showToast('No window selected', 'alert-circle');
+                return;
             }
-            // Send Enter
-            sendTerminalKeystroke('Enter', {});
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'terminal_key',
+                    window_id: streamController.currentWindowId,
+                    key: key,
+                    modifiers: modifiers
+                }));
+                showToast('Key: ' + key, 'keyboard');
+            }
         }
 
         function setupTerminalKeyboard() {
@@ -2780,8 +2788,8 @@
                     const ctrl = btn.dataset.ctrl === 'true';
                     const alt = btn.dataset.alt === 'true';
                     const shift = btn.dataset.shift === 'true';
-                    console.log('[SETUP] Quick key clicked:', key);
-                    sendTerminalKeystroke(key, { ctrl, alt, shift });
+                    console.log('[TERM] Quick key clicked:', key, 'ctrl:', ctrl);
+                    sendTerminalKey(key, { ctrl, alt, shift });
                 });
             });
 
@@ -2794,11 +2802,14 @@
 
             if (termSend) {
                 termSend.addEventListener('click', () => {
-                    console.log('[SETUP] Send button clicked, value:', termInput?.value);
-                    sendTerminalText(termInput?.value || '');
-                    if (termInput) {
+                    const cmd = termInput?.value?.trim() || '';
+                    console.log('[TERM] Send button clicked, command:', cmd);
+                    if (cmd) {
+                        sendTerminalCommand(cmd);
                         termInput.value = '';
                         termInput.focus();
+                    } else {
+                        showToast('Enter a command', 'alert-circle');
                     }
                 });
             }
@@ -2808,9 +2819,12 @@
                 termInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        console.log('[SETUP] Enter pressed, value:', termInput.value);
-                        sendTerminalText(termInput.value);
-                        termInput.value = '';
+                        const cmd = termInput.value.trim();
+                        console.log('[TERM] Enter pressed, command:', cmd);
+                        if (cmd) {
+                            sendTerminalCommand(cmd);
+                            termInput.value = '';
+                        }
                     }
                 });
             }

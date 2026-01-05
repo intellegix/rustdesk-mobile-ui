@@ -534,26 +534,25 @@ async def web_websocket(websocket: WebSocket):
                         "error": "PC not connected"
                     })
 
-            elif msg_type in ("terminal_start", "terminal_input", "terminal_stop", "terminal_keystroke"):
+            elif msg_type in ("terminal_start", "terminal_input", "terminal_stop", "terminal_keystroke", "terminal_command", "terminal_key"):
                 # Forward terminal control messages to PC
-                print(f"[RELAY] Terminal message: {msg_type}, window: {data.get('window_id', 'N/A')}, key: {data.get('key', 'N/A')}")
+                print(f"[RELAY] Terminal message: {msg_type}, window: {data.get('window_id', 'N/A')}, cmd: {data.get('command', data.get('key', 'N/A'))}")
                 if pc_connection:
                     try:
                         await pc_connection.send_json(data)
-                        print(f"[RELAY] Forwarded to PC")
-                    except:
+                        print(f"[RELAY] Forwarded to PC successfully")
+                    except Exception as e:
+                        print(f"[RELAY] Failed to forward: {e}")
                         await websocket.send_json({
                             "type": "terminal_output",
                             "session_id": data.get("session_id", "default"),
-                            "type": "error",
-                            "text": "Failed to send command to PC\n"
+                            "text": f"Failed to send to PC: {e}\n"
                         })
                 else:
                     print(f"[RELAY] PC not connected, cannot forward terminal message")
                     await websocket.send_json({
                         "type": "terminal_output",
                         "session_id": data.get("session_id", "default"),
-                        "type": "error",
                         "text": "PC not connected\n"
                     })
 
