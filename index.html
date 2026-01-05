@@ -1499,8 +1499,8 @@
             if (!data) return;
             
             const grid = document.getElementById('app-grid');
-            const apps = data.apps;
-            
+            const apps = data.apps || [];
+
             // Separate featured (first 3) and regular apps
             const featured = apps.slice(0, 3);
             const regular = apps.slice(3);
@@ -1550,8 +1550,8 @@
             if (!data) return;
             
             const list = document.getElementById('windows-list');
-            const windows = data.windows;
-            
+            const windows = data.windows || [];
+
             if (windows.length === 0) {
                 list.innerHTML = `
                     <div class="no-windows">
