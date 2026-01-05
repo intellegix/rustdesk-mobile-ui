@@ -2569,13 +2569,22 @@
                 // Create image from base64
                 const img = new Image();
                 img.onload = () => {
-                    // Scale canvas to fit container width for sharp rendering
+                    // Account for high-DPI displays (Retina, etc.)
+                    const dpr = window.devicePixelRatio || 1;
                     const container = document.getElementById('stream-container');
                     const containerWidth = container.clientWidth;
                     const scale = containerWidth / img.width;
+                    const displayHeight = Math.round(img.height * scale);
 
-                    this.canvas.width = containerWidth;
-                    this.canvas.height = Math.round(img.height * scale);
+                    // Set canvas internal resolution (high for sharp text)
+                    this.canvas.width = Math.round(containerWidth * dpr);
+                    this.canvas.height = Math.round(displayHeight * dpr);
+
+                    // Set CSS display size
+                    this.canvas.style.width = containerWidth + 'px';
+                    this.canvas.style.height = displayHeight + 'px';
+
+                    // Draw at high resolution
                     this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
                 };
                 img.src = 'data:image/jpeg;base64,' + data.frame;
