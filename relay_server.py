@@ -509,6 +509,10 @@ async def web_websocket(websocket: WebSocket):
             data = await websocket.receive_json()
             msg_type = data.get("type", "")
 
+            # Log all non-ping messages
+            if msg_type != "ping":
+                print(f"[WS] Received from web: {msg_type} - {data}")
+
             if msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
 
