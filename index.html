@@ -3460,7 +3460,7 @@
             if (clearLocal) {
                 clearLocal.addEventListener('click', () => {
                     termInput.value = '';
-                    // Don't focus - prevents keyboard from appearing on mobile
+                    termInput.blur(); // Collapse keyboard on mobile
                     showToast('Input cleared', 'x');
                 });
             }
