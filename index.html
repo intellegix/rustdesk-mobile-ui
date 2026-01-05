@@ -2904,7 +2904,7 @@
                     if (cmd) {
                         sendTerminalCommand(cmd);
                         termInput.value = '';
-                        termInput.focus();
+                        termInput.blur(); // Collapse mobile keyboard
                     } else {
                         showToast('Enter a command', 'alert-circle');
                     }
@@ -2944,6 +2944,7 @@
                         if (cmd) {
                             sendTerminalCommand(cmd);
                             termInput.value = '';
+                            termInput.blur(); // Collapse mobile keyboard
                         }
                     }
                 });
