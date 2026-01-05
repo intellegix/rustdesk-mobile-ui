@@ -2733,27 +2733,32 @@
         function sendTerminalKeystroke(key, modifiers = {}) {
             if (!streamController.currentWindowId) {
                 console.log('[TERM] No window ID');
+                showToast('No window ID', 'alert-circle');
                 return;
             }
 
             console.log('[TERM] Sending keystroke:', key, 'to window:', streamController.currentWindowId);
 
             if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
+                const msg = {
                     type: 'terminal_keystroke',
                     window_id: streamController.currentWindowId,
                     key: key,
                     modifiers: modifiers
-                }));
+                };
+                console.log('[TERM] Sending:', JSON.stringify(msg));
+                ws.send(JSON.stringify(msg));
                 console.log('[TERM] Sent via WebSocket');
             } else {
                 console.log('[TERM] WebSocket not open, state:', ws ? ws.readyState : 'null');
+                showToast('WebSocket not connected', 'wifi-off');
             }
         }
 
         // Send text as keystrokes (for typing commands)
         function sendTerminalText(text) {
             if (!text) return;
+            showToast(`Sending: ${text}`, 'send');
 
             // Send each character
             for (const char of text) {
