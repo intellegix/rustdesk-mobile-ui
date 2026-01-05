@@ -2731,7 +2731,12 @@
 
         // Send keystroke to actual terminal window via relay
         function sendTerminalKeystroke(key, modifiers = {}) {
-            if (!streamController.currentWindowId) return;
+            if (!streamController.currentWindowId) {
+                console.log('[TERM] No window ID');
+                return;
+            }
+
+            console.log('[TERM] Sending keystroke:', key, 'to window:', streamController.currentWindowId);
 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
@@ -2740,6 +2745,9 @@
                     key: key,
                     modifiers: modifiers
                 }));
+                console.log('[TERM] Sent via WebSocket');
+            } else {
+                console.log('[TERM] WebSocket not open, state:', ws ? ws.readyState : 'null');
             }
         }
 
