@@ -149,7 +149,7 @@ class WindowCapture:
             return "generic"
 
     @staticmethod
-    def capture_window(hwnd: int, quality: int = 60, max_width: int = 800) -> Optional[Tuple[str, int, int]]:
+    def capture_window(hwnd: int, quality: int = 60, max_width: int = 800, restore_if_minimized: bool = True) -> Optional[Tuple[str, int, int]]:
         """
         Capture a window and return base64-encoded JPEG.
 
@@ -157,6 +157,7 @@ class WindowCapture:
             hwnd: Window handle
             quality: JPEG quality (1-100)
             max_width: Maximum width for output image (for mobile optimization)
+            restore_if_minimized: If True, restore minimized windows before capture
 
         Returns:
             Tuple of (base64_data, width, height) or None if capture failed
@@ -169,11 +170,15 @@ class WindowCapture:
             if not win32gui.IsWindow(hwnd):
                 return None
 
-            # If window is minimized, restore it temporarily for capture
+            # If window is minimized, restore it first
             was_minimized = win32gui.IsIconic(hwnd)
             if was_minimized:
-                # Can't capture minimized windows reliably
-                return None
+                if restore_if_minimized:
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    import time
+                    time.sleep(0.15)  # Brief delay for window to restore
+                else:
+                    return None
 
             # Get window dimensions
             rect = win32gui.GetWindowRect(hwnd)

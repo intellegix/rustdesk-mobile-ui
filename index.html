@@ -978,6 +978,165 @@
         .stream-action.danger svg {
             color: #EF4444;
         }
+
+        /* ========== MOBILE RESPONSIVE STYLES ========== */
+
+        /* Landscape mode - compact UI */
+        @media (orientation: landscape) {
+            .stream-header {
+                padding: 8px 16px;
+            }
+            .stream-back {
+                width: 40px;
+                height: 40px;
+            }
+            .stream-title {
+                font-size: 14px;
+            }
+            .stream-type-badge {
+                display: none;
+            }
+            .stream-footer {
+                padding: 8px 12px;
+                gap: 6px;
+                padding-bottom: calc(8px + var(--safe-area-bottom));
+            }
+            .stream-action {
+                padding: 10px 8px;
+                min-width: 56px;
+            }
+            .stream-action svg {
+                width: 20px;
+                height: 20px;
+            }
+            .stream-action-label {
+                display: none;
+            }
+            .browser-controls {
+                padding: 8px 12px;
+            }
+            .browser-nav-btn {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* Small screens - stacked browser controls */
+        @media (max-width: 400px) {
+            .browser-controls {
+                flex-wrap: wrap;
+                padding: 10px 12px;
+            }
+            .browser-url-container {
+                width: 100%;
+                order: 1;
+                margin-top: 10px;
+            }
+            .browser-nav-btn {
+                width: 48px;
+                height: 48px;
+            }
+        }
+
+        /* Touch-optimized canvas */
+        .stream-container {
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        #stream-canvas {
+            transform-origin: center center;
+            will-change: transform;
+        }
+
+        /* Zoom controls overlay */
+        .zoom-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .zoom-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: transform 0.15s, background 0.15s;
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.9);
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .zoom-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .zoom-indicator {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .zoom-indicator.show {
+            opacity: 1;
+        }
+
+        /* Larger touch targets for buttons */
+        .stream-action {
+            min-height: 48px;
+            min-width: 64px;
+        }
+
+        .browser-nav-btn {
+            min-width: 48px;
+            min-height: 48px;
+        }
+
+        /* Double-tap hint */
+        .double-tap-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .double-tap-hint.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -1157,7 +1316,7 @@
             <span class="stream-fps" id="stream-fps">-- FPS</span>
         </header>
 
-        <div class="stream-container">
+        <div class="stream-container" id="stream-container">
             <canvas id="stream-canvas"></canvas>
             <div class="stream-loading" id="stream-loading">
                 <div class="spinner"></div>
@@ -1167,6 +1326,19 @@
                 <i data-lucide="alert-circle"></i>
                 <span id="stream-error-msg">Stream error</span>
             </div>
+            <div class="zoom-indicator" id="zoom-indicator">100%</div>
+            <div class="zoom-controls" id="zoom-controls">
+                <button class="zoom-btn" id="zoom-in">
+                    <i data-lucide="plus"></i>
+                </button>
+                <button class="zoom-btn" id="zoom-out">
+                    <i data-lucide="minus"></i>
+                </button>
+                <button class="zoom-btn" id="zoom-reset">
+                    <i data-lucide="maximize-2"></i>
+                </button>
+            </div>
+            <div class="double-tap-hint" id="double-tap-hint">Double-tap to zoom</div>
         </div>
 
         <!-- Browser Controls (shown for browser windows) -->
@@ -1645,6 +1817,175 @@
             }
         }
 
+        // ========== TOUCH GESTURE HANDLER ==========
+        class TouchGestureHandler {
+            constructor(container, canvas) {
+                this.container = container;
+                this.canvas = canvas;
+                this.scale = 1;
+                this.minScale = 1;
+                this.maxScale = 4;
+                this.translateX = 0;
+                this.translateY = 0;
+                this.lastDistance = 0;
+                this.lastTap = 0;
+                this.isPanning = false;
+                this.lastPanX = 0;
+                this.lastPanY = 0;
+                this.hintTimeout = null;
+
+                this.setupListeners();
+            }
+
+            setupListeners() {
+                // Touch events
+                this.container.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+                this.container.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+                this.container.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: true });
+
+                // Prevent default zoom on double-tap
+                this.container.addEventListener('dblclick', (e) => e.preventDefault());
+            }
+
+            handleTouchStart(e) {
+                if (e.touches.length === 2) {
+                    // Pinch start
+                    this.lastDistance = this.getDistance(e.touches[0], e.touches[1]);
+                    e.preventDefault();
+                } else if (e.touches.length === 1) {
+                    // Check for double-tap
+                    const now = Date.now();
+                    if (now - this.lastTap < 300) {
+                        this.handleDoubleTap(e);
+                        e.preventDefault();
+                    }
+                    this.lastTap = now;
+
+                    // Start pan if zoomed
+                    if (this.scale > 1) {
+                        this.isPanning = true;
+                        this.lastPanX = e.touches[0].clientX;
+                        this.lastPanY = e.touches[0].clientY;
+                    }
+                }
+            }
+
+            handleTouchMove(e) {
+                if (e.touches.length === 2) {
+                    // Pinch zoom
+                    e.preventDefault();
+                    const distance = this.getDistance(e.touches[0], e.touches[1]);
+                    const delta = distance / this.lastDistance;
+                    this.lastDistance = distance;
+
+                    const newScale = Math.min(this.maxScale, Math.max(this.minScale, this.scale * delta));
+                    this.scale = newScale;
+                    this.applyTransform();
+                    this.showZoomIndicator();
+                } else if (e.touches.length === 1 && this.isPanning && this.scale > 1) {
+                    // Pan
+                    e.preventDefault();
+                    const deltaX = e.touches[0].clientX - this.lastPanX;
+                    const deltaY = e.touches[0].clientY - this.lastPanY;
+                    this.lastPanX = e.touches[0].clientX;
+                    this.lastPanY = e.touches[0].clientY;
+
+                    this.translateX += deltaX;
+                    this.translateY += deltaY;
+                    this.constrainPan();
+                    this.applyTransform();
+                }
+            }
+
+            handleTouchEnd(e) {
+                this.isPanning = false;
+                if (this.scale <= 1) {
+                    this.reset();
+                }
+            }
+
+            handleDoubleTap(e) {
+                if (this.scale > 1) {
+                    this.reset();
+                } else {
+                    this.scale = 2;
+                    // Zoom to tap point
+                    const rect = this.container.getBoundingClientRect();
+                    const tapX = e.touches[0].clientX - rect.left;
+                    const tapY = e.touches[0].clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    this.translateX = (centerX - tapX);
+                    this.translateY = (centerY - tapY);
+                    this.constrainPan();
+                    this.applyTransform();
+                    this.showZoomIndicator();
+                }
+            }
+
+            getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            constrainPan() {
+                const maxPan = (this.scale - 1) * this.canvas.width / 2;
+                const maxPanY = (this.scale - 1) * this.canvas.height / 2;
+                this.translateX = Math.min(maxPan, Math.max(-maxPan, this.translateX));
+                this.translateY = Math.min(maxPanY, Math.max(-maxPanY, this.translateY));
+            }
+
+            applyTransform() {
+                this.canvas.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+            }
+
+            showZoomIndicator() {
+                const indicator = document.getElementById('zoom-indicator');
+                indicator.textContent = `${Math.round(this.scale * 100)}%`;
+                indicator.classList.add('show');
+                clearTimeout(this.hideIndicatorTimeout);
+                this.hideIndicatorTimeout = setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 1500);
+            }
+
+            zoomIn() {
+                this.scale = Math.min(this.maxScale, this.scale * 1.5);
+                this.constrainPan();
+                this.applyTransform();
+                this.showZoomIndicator();
+            }
+
+            zoomOut() {
+                this.scale = Math.max(this.minScale, this.scale / 1.5);
+                if (this.scale <= 1) {
+                    this.reset();
+                } else {
+                    this.constrainPan();
+                    this.applyTransform();
+                    this.showZoomIndicator();
+                }
+            }
+
+            reset() {
+                this.scale = 1;
+                this.translateX = 0;
+                this.translateY = 0;
+                this.applyTransform();
+                this.showZoomIndicator();
+            }
+
+            showHint() {
+                const hint = document.getElementById('double-tap-hint');
+                hint.classList.add('show');
+                clearTimeout(this.hintTimeout);
+                this.hintTimeout = setTimeout(() => {
+                    hint.classList.remove('show');
+                }, 2000);
+            }
+        }
+
         // ========== STREAM CONTROLLER ==========
         class StreamController {
             constructor() {
@@ -1656,6 +1997,7 @@
                 this.fpsStartTime = Date.now();
                 this.currentFps = 0;
                 this.streamActive = false;
+                this.gestureHandler = null;
             }
 
             async openStream(windowId, windowTitle, windowClass) {
@@ -1684,6 +2026,16 @@
 
                 // Update UI based on type
                 this.updateWindowTypeUI();
+
+                // Initialize touch gesture handler
+                const container = document.getElementById('stream-container');
+                if (!this.gestureHandler) {
+                    this.gestureHandler = new TouchGestureHandler(container, this.canvas);
+                    // Show hint on first open
+                    this.gestureHandler.showHint();
+                } else {
+                    this.gestureHandler.reset();
+                }
 
                 // Start the stream via WebSocket
                 if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1737,6 +2089,12 @@
                 }
                 this.streamActive = false;
                 this.currentWindowId = null;
+
+                // Reset zoom when closing
+                if (this.gestureHandler) {
+                    this.gestureHandler.reset();
+                }
+
                 document.getElementById('stream-overlay').classList.remove('active');
             }
 
@@ -1886,6 +2244,25 @@
                     if (url) {
                         streamController.navigateToUrl(url);
                     }
+                }
+            });
+
+            // Zoom controls
+            document.getElementById('zoom-in').addEventListener('click', () => {
+                if (streamController.gestureHandler) {
+                    streamController.gestureHandler.zoomIn();
+                }
+            });
+
+            document.getElementById('zoom-out').addEventListener('click', () => {
+                if (streamController.gestureHandler) {
+                    streamController.gestureHandler.zoomOut();
+                }
+            });
+
+            document.getElementById('zoom-reset').addEventListener('click', () => {
+                if (streamController.gestureHandler) {
+                    streamController.gestureHandler.reset();
                 }
             });
         }
