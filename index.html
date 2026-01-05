@@ -2523,6 +2523,7 @@
                 const browserControls = document.getElementById('browser-controls');
                 const terminalKeyboard = document.getElementById('terminal-keyboard');
 
+                console.log('[STREAM] Window type:', this.windowType);
                 badge.className = `stream-type-badge ${this.windowType}`;
                 badge.textContent = this.windowType.charAt(0).toUpperCase() + this.windowType.slice(1);
 
@@ -2530,15 +2531,12 @@
                 if (this.windowType === 'browser') {
                     browserControls.classList.add('show');
                     terminalKeyboard.classList.remove('show');
-                } else if (this.windowType === 'terminal') {
-                    // Show terminal keyboard for terminal windows
+                } else {
+                    // Show terminal keyboard for all non-browser windows (terminal, generic, etc)
                     browserControls.classList.remove('show');
                     terminalKeyboard.classList.add('show');
                     // Focus input after a short delay
                     setTimeout(() => document.getElementById('term-input').focus(), 100);
-                } else {
-                    browserControls.classList.remove('show');
-                    terminalKeyboard.classList.remove('show');
                 }
             }
 
