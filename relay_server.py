@@ -473,6 +473,14 @@ async def pc_websocket(websocket: WebSocket):
                     except:
                         pass
 
+            elif msg_type == "terminal_output":
+                # Forward terminal output to all web clients
+                for wc in web_connections:
+                    try:
+                        await wc.send_json(data)
+                    except:
+                        pass
+
     except WebSocketDisconnect:
         print("PC disconnected")
         pc_connection = None
@@ -520,6 +528,26 @@ async def web_websocket(websocket: WebSocket):
                         "type": "stream_error",
                         "window_id": data.get("window_id"),
                         "error": "PC not connected"
+                    })
+
+            elif msg_type in ("terminal_start", "terminal_input", "terminal_stop"):
+                # Forward terminal control messages to PC
+                if pc_connection:
+                    try:
+                        await pc_connection.send_json(data)
+                    except:
+                        await websocket.send_json({
+                            "type": "terminal_output",
+                            "session_id": data.get("session_id", "default"),
+                            "type": "error",
+                            "text": "Failed to send command to PC\n"
+                        })
+                else:
+                    await websocket.send_json({
+                        "type": "terminal_output",
+                        "session_id": data.get("session_id", "default"),
+                        "type": "error",
+                        "text": "PC not connected\n"
                     })
 
     except WebSocketDisconnect:

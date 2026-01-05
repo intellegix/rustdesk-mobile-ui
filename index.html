@@ -1038,6 +1038,172 @@
             }
         }
 
+        /* ========== MOBILE TERMINAL UI ========== */
+        .terminal-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .terminal-overlay.active {
+            display: flex;
+        }
+
+        .terminal-header {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .terminal-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: none;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .terminal-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .terminal-cwd {
+            font-size: 11px;
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #0d1117;
+            color: #c9d1d9;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-output::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .terminal-quick-actions {
+            padding: 8px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .terminal-quick-actions::-webkit-scrollbar {
+            display: none;
+        }
+
+        .quick-cmd {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .quick-cmd:active {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .terminal-input-area {
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-shrink: 0;
+            padding-bottom: calc(12px + var(--safe-area-bottom));
+        }
+
+        .terminal-prompt {
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .terminal-input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .terminal-input:focus {
+            border-color: var(--accent-green);
+        }
+
+        .terminal-send {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-green);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .terminal-send:active {
+            transform: scale(0.95);
+        }
+
+        .terminal-send svg {
+            width: 20px;
+            height: 20px;
+        }
+
         /* Touch-optimized canvas */
         .stream-container {
             touch-action: none;
@@ -1379,6 +1545,37 @@
         </footer>
     </div>
 
+    <!-- Mobile Terminal UI Overlay -->
+    <div class="terminal-overlay" id="terminal-overlay">
+        <header class="terminal-header">
+            <button class="terminal-back" id="terminal-back">
+                <i data-lucide="arrow-left"></i>
+            </button>
+            <div class="terminal-title" id="terminal-title">Terminal</div>
+            <div class="terminal-cwd" id="terminal-cwd">~</div>
+        </header>
+
+        <div class="terminal-output" id="terminal-output"></div>
+
+        <div class="terminal-quick-actions">
+            <button class="quick-cmd" data-cmd="dir">dir</button>
+            <button class="quick-cmd" data-cmd="cd">pwd</button>
+            <button class="quick-cmd" data-cmd="cd ..">cd ..</button>
+            <button class="quick-cmd" data-cmd="clear">clear</button>
+            <button class="quick-cmd" data-cmd="git status">git</button>
+            <button class="quick-cmd" data-cmd="tasklist">tasks</button>
+            <button class="quick-cmd" data-cmd="cls">cls</button>
+        </div>
+
+        <div class="terminal-input-area">
+            <span class="terminal-prompt">$</span>
+            <input type="text" class="terminal-input" id="terminal-input" placeholder="Enter command..." autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="terminal-send" id="terminal-send">
+                <i data-lucide="send"></i>
+            </button>
+        </div>
+    </div>
+
     <script>
         // Configuration
         const API_BASE = window.location.origin;
@@ -1594,9 +1791,18 @@
                 </div>
             `;
             
-            // Click to open stream view
+            // Click to open stream view or terminal
             card.querySelector('.window-info').addEventListener('click', () => {
-                streamController.openStream(win.id, win.title, win.class);
+                const cls = (win.class || '').toLowerCase();
+                const isTerminal = ['cmd', 'powershell', 'pwsh', 'terminal', 'windowsterminal', 'conhost', 'mintty', 'gnome-terminal', 'konsole'].some(t => cls.includes(t));
+
+                if (isTerminal) {
+                    // Open native terminal UI
+                    terminalController.open(win.id, win.title);
+                } else {
+                    // Open stream view for other windows
+                    streamController.openStream(win.id, win.title, win.class);
+                }
             });
             card.querySelector('.minimize').addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1801,6 +2007,9 @@
                 case 'stream_status':
                     streamController.handleStatus(data);
                     break;
+                case 'terminal_output':
+                    terminalController.handleOutput(data);
+                    break;
             }
         }
 
@@ -1985,6 +2194,138 @@
                 }, 2000);
             }
         }
+
+        // ========== TERMINAL CONTROLLER ==========
+        class TerminalController {
+            constructor() {
+                this.sessionId = null;
+                this.windowId = null;
+                this.windowTitle = '';
+                this.output = document.getElementById('terminal-output');
+                this.input = document.getElementById('terminal-input');
+                this.cwdDisplay = document.getElementById('terminal-cwd');
+                this.titleDisplay = document.getElementById('terminal-title');
+                this.historyIndex = -1;
+                this.history = [];
+                this.active = false;
+            }
+
+            open(windowId, windowTitle) {
+                this.windowId = windowId;
+                this.windowTitle = windowTitle;
+                this.sessionId = `terminal_${windowId}`;
+                this.titleDisplay.textContent = windowTitle || 'Terminal';
+                this.output.innerHTML = '';
+                this.input.value = '';
+                this.historyIndex = -1;
+
+                document.getElementById('terminal-overlay').classList.add('active');
+                this.active = true;
+
+                // Start terminal session via WebSocket
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'terminal_start',
+                        session_id: this.sessionId
+                    }));
+                }
+
+                // Focus input
+                setTimeout(() => this.input.focus(), 100);
+                initIcons();
+            }
+
+            close() {
+                // Stop terminal session
+                if (this.sessionId && ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'terminal_stop',
+                        session_id: this.sessionId
+                    }));
+                }
+
+                this.active = false;
+                this.sessionId = null;
+                document.getElementById('terminal-overlay').classList.remove('active');
+            }
+
+            sendCommand(command) {
+                if (!command.trim() || !this.sessionId) return;
+
+                // Add to local history
+                this.history.push(command);
+                this.historyIndex = this.history.length;
+
+                // Send to PC
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'terminal_input',
+                        session_id: this.sessionId,
+                        command: command
+                    }));
+                }
+
+                this.input.value = '';
+            }
+
+            handleOutput(data) {
+                if (data.session_id !== this.sessionId) return;
+
+                if (data.type === 'clear') {
+                    this.output.innerHTML = '';
+                    return;
+                }
+
+                if (data.cwd) {
+                    // Shorten path for display
+                    let displayPath = data.cwd;
+                    const home = data.cwd.includes('Users') ? data.cwd.split('Users')[0] + 'Users' : '';
+                    if (home && data.cwd.startsWith(home)) {
+                        displayPath = '~' + data.cwd.substring(home.length);
+                    }
+                    if (displayPath.length > 30) {
+                        displayPath = '...' + displayPath.slice(-27);
+                    }
+                    this.cwdDisplay.textContent = displayPath;
+                }
+
+                if (data.text) {
+                    // Apply syntax highlighting to output
+                    const span = document.createElement('span');
+                    span.textContent = data.text;
+
+                    // Color error output
+                    if (data.type === 'error' || (data.exit_code && data.exit_code !== 0)) {
+                        span.style.color = '#f85149';
+                    } else if (data.type === 'input_echo') {
+                        span.style.color = '#58a6ff';
+                    }
+
+                    this.output.appendChild(span);
+                    this.output.scrollTop = this.output.scrollHeight;
+                }
+            }
+
+            historyUp() {
+                if (this.history.length === 0) return;
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.input.value = this.history[this.historyIndex];
+                }
+            }
+
+            historyDown() {
+                if (this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.input.value = this.history[this.historyIndex];
+                } else {
+                    this.historyIndex = this.history.length;
+                    this.input.value = '';
+                }
+            }
+        }
+
+        const terminalController = new TerminalController();
 
         // ========== STREAM CONTROLLER ==========
         class StreamController {
@@ -2267,11 +2608,51 @@
             });
         }
 
+        function setupTerminalControls() {
+            // Back button
+            document.getElementById('terminal-back').addEventListener('click', () => {
+                terminalController.close();
+            });
+
+            // Input field - Enter to send
+            const terminalInput = document.getElementById('terminal-input');
+            terminalInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    terminalController.sendCommand(terminalInput.value);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    terminalController.historyUp();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    terminalController.historyDown();
+                }
+            });
+
+            // Send button
+            document.getElementById('terminal-send').addEventListener('click', () => {
+                terminalController.sendCommand(terminalInput.value);
+            });
+
+            // Quick command buttons
+            document.querySelectorAll('.quick-cmd').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cmd = btn.dataset.cmd;
+                    if (cmd === 'clear') {
+                        document.getElementById('terminal-output').innerHTML = '';
+                    } else {
+                        terminalController.sendCommand(cmd);
+                    }
+                });
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             setupNavigation();
             setupControls();
             setupStreamControls();
+            setupTerminalControls();
             initIcons();
 
             await loadApps();

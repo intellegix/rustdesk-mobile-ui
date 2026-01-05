@@ -2,7 +2,7 @@
 """
 RustDesk Mobile UI - Relay Client (Runs on your PC)
 Connects to the relay server and executes commands locally.
-Supports live window streaming.
+Supports live window streaming and interactive terminal sessions.
 """
 
 import asyncio
@@ -10,8 +10,10 @@ import json
 import os
 import sys
 import argparse
+import threading
+import queue
 from urllib.parse import urljoin
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import aiohttp
 
@@ -45,6 +47,165 @@ except ImportError:
     pass
 
 
+class TerminalSession:
+    """Manages an interactive terminal session."""
+
+    def __init__(self, session_id: str, shell: str = None):
+        self.session_id = session_id
+        self.shell = shell or ("powershell.exe" if os.name == 'nt' else "/bin/bash")
+        self.process: Optional[subprocess.Popen] = None
+        self.output_queue: queue.Queue = queue.Queue()
+        self.running = False
+        self.history: list = []
+        self.cwd = os.path.expanduser("~")
+
+    def start(self):
+        """Start the terminal session."""
+        if self.running:
+            return
+
+        self.running = True
+
+        # For Windows, we'll use a simpler approach - execute commands one at a time
+        # and return output, rather than a persistent shell (which is complex on Windows)
+        self.output_queue.put({
+            "type": "output",
+            "text": f"Terminal session started\nWorking directory: {self.cwd}\n\n$ ",
+            "cwd": self.cwd
+        })
+
+    def execute(self, command: str) -> None:
+        """Execute a command and queue the output."""
+        if not self.running:
+            return
+
+        # Add to history
+        self.history.append(command)
+
+        # Handle built-in commands
+        if command.strip().lower() == "clear" or command.strip().lower() == "cls":
+            self.output_queue.put({
+                "type": "clear"
+            })
+            self.output_queue.put({
+                "type": "output",
+                "text": "$ ",
+                "cwd": self.cwd
+            })
+            return
+
+        if command.strip().lower().startswith("cd "):
+            new_dir = command.strip()[3:].strip()
+            try:
+                # Handle ~ expansion
+                if new_dir.startswith("~"):
+                    new_dir = os.path.expanduser(new_dir)
+                # Handle relative paths
+                if not os.path.isabs(new_dir):
+                    new_dir = os.path.join(self.cwd, new_dir)
+                new_dir = os.path.normpath(new_dir)
+
+                if os.path.isdir(new_dir):
+                    self.cwd = new_dir
+                    self.output_queue.put({
+                        "type": "output",
+                        "text": f"\n$ ",
+                        "cwd": self.cwd
+                    })
+                else:
+                    self.output_queue.put({
+                        "type": "output",
+                        "text": f"\ncd: no such directory: {new_dir}\n$ ",
+                        "cwd": self.cwd
+                    })
+            except Exception as e:
+                self.output_queue.put({
+                    "type": "output",
+                    "text": f"\ncd error: {e}\n$ ",
+                    "cwd": self.cwd
+                })
+            return
+
+        # Execute command in subprocess
+        try:
+            if os.name == 'nt':
+                # Windows: use cmd /c for better compatibility
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=self.cwd,
+                    env={**os.environ, "PYTHONIOENCODING": "utf-8"}
+                )
+            else:
+                # Unix
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=self.cwd
+                )
+
+            output = ""
+            if result.stdout:
+                output += result.stdout
+            if result.stderr:
+                output += result.stderr
+            if not output:
+                output = ""
+
+            self.output_queue.put({
+                "type": "output",
+                "text": f"\n{output}\n$ " if output else "\n$ ",
+                "cwd": self.cwd,
+                "exit_code": result.returncode
+            })
+
+        except subprocess.TimeoutExpired:
+            self.output_queue.put({
+                "type": "output",
+                "text": "\n[Command timed out after 30 seconds]\n$ ",
+                "cwd": self.cwd,
+                "exit_code": -1
+            })
+        except Exception as e:
+            self.output_queue.put({
+                "type": "output",
+                "text": f"\n[Error: {e}]\n$ ",
+                "cwd": self.cwd,
+                "exit_code": -1
+            })
+
+    def get_output(self) -> Optional[dict]:
+        """Get pending output from the queue."""
+        try:
+            return self.output_queue.get_nowait()
+        except queue.Empty:
+            return None
+
+    def get_history(self, index: int = -1) -> Optional[str]:
+        """Get command from history."""
+        if not self.history:
+            return None
+        try:
+            return self.history[index]
+        except IndexError:
+            return None
+
+    def stop(self):
+        """Stop the terminal session."""
+        self.running = False
+        if self.process:
+            try:
+                self.process.terminate()
+            except:
+                pass
+
+
 class RelayClient:
     def __init__(self, relay_url: str, auth_token: str):
         self.relay_url = relay_url.rstrip('/')
@@ -53,6 +214,7 @@ class RelayClient:
         self.running = False
         self.active_streams: Dict[str, asyncio.Task] = {}  # window_id -> capture task
         self.stream_options: Dict[str, dict] = {}  # window_id -> {fps, quality, max_width}
+        self.terminal_sessions: Dict[str, TerminalSession] = {}  # session_id -> TerminalSession
 
     async def handle_request(self, request_id: str, endpoint: str, method: str, data: dict = None) -> dict:
         """Handle an incoming request from the relay."""
@@ -334,6 +496,84 @@ class RelayClient:
         for window_id in list(self.active_streams.keys()):
             await self.stop_stream(window_id)
 
+    # ========== TERMINAL SESSION METHODS ==========
+
+    async def start_terminal(self, session_id: str):
+        """Start a new terminal session."""
+        # Stop existing session if any
+        if session_id in self.terminal_sessions:
+            await self.stop_terminal(session_id)
+
+        session = TerminalSession(session_id)
+        session.start()
+        self.terminal_sessions[session_id] = session
+
+        print(f"Started terminal session: {session_id}")
+
+        # Send initial output
+        await self._flush_terminal_output(session_id)
+
+    async def terminal_execute(self, session_id: str, command: str):
+        """Execute a command in a terminal session."""
+        session = self.terminal_sessions.get(session_id)
+        if not session:
+            await self.send_terminal_output(session_id, {
+                "type": "error",
+                "text": "Terminal session not found. Starting new session...\n"
+            })
+            await self.start_terminal(session_id)
+            session = self.terminal_sessions.get(session_id)
+
+        if session:
+            # Echo the command
+            await self.send_terminal_output(session_id, {
+                "type": "input_echo",
+                "text": command + "\n"
+            })
+
+            # Execute in thread to not block
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, session.execute, command)
+
+            # Send output
+            await self._flush_terminal_output(session_id)
+
+    async def _flush_terminal_output(self, session_id: str):
+        """Flush all pending output from a terminal session."""
+        session = self.terminal_sessions.get(session_id)
+        if not session:
+            return
+
+        while True:
+            output = session.get_output()
+            if output is None:
+                break
+            await self.send_terminal_output(session_id, output)
+
+    async def send_terminal_output(self, session_id: str, output: dict):
+        """Send terminal output to the relay."""
+        if self.ws:
+            try:
+                await self.ws.send_json({
+                    "type": "terminal_output",
+                    "session_id": session_id,
+                    **output
+                })
+            except Exception as e:
+                print(f"Error sending terminal output: {e}")
+
+    async def stop_terminal(self, session_id: str):
+        """Stop a terminal session."""
+        session = self.terminal_sessions.pop(session_id, None)
+        if session:
+            session.stop()
+            print(f"Stopped terminal session: {session_id}")
+
+    async def stop_all_terminals(self):
+        """Stop all terminal sessions."""
+        for session_id in list(self.terminal_sessions.keys()):
+            await self.stop_terminal(session_id)
+
     async def connect(self):
         """Connect to the relay server."""
         ws_url = self.relay_url.replace("https://", "wss://").replace("http://", "ws://")
@@ -394,6 +634,20 @@ class RelayClient:
                                         await self.stop_stream(window_id)
                                         await self.start_stream(window_id, options)
 
+                                # Terminal session handlers
+                                elif msg_type == "terminal_start":
+                                    session_id = data.get("session_id", "default")
+                                    await self.start_terminal(session_id)
+
+                                elif msg_type == "terminal_input":
+                                    session_id = data.get("session_id", "default")
+                                    command = data.get("command", "")
+                                    await self.terminal_execute(session_id, command)
+
+                                elif msg_type == "terminal_stop":
+                                    session_id = data.get("session_id", "default")
+                                    await self.stop_terminal(session_id)
+
                             elif msg.type == aiohttp.WSMsgType.ERROR:
                                 print(f"WebSocket error: {ws.exception()}")
                                 break
@@ -403,8 +657,9 @@ class RelayClient:
                 except Exception as e:
                     print(f"Error: {e}")
 
-                # Stop all streams on disconnect
+                # Stop all streams and terminals on disconnect
                 await self.stop_all_streams()
+                await self.stop_all_terminals()
 
                 if self.running:
                     print("Reconnecting in 5 seconds...")
@@ -421,6 +676,7 @@ class RelayClient:
         print(f"pycaw: {'OK' if HAS_PYCAW else 'MISSING'}")
         print(f"screen_brightness_control: {'OK' if HAS_SBC else 'MISSING'}")
         print(f"Window Capture: {'OK' if HAS_CAPTURE else 'MISSING'}")
+        print(f"Terminal Sessions: OK")
         print("=" * 50)
         print("Press Ctrl+C to stop")
         print()
