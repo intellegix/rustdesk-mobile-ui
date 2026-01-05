@@ -1106,6 +1106,40 @@
             height: 18px;
         }
 
+        .term-voice {
+            width: 44px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid #3B82F6;
+            border-radius: 10px;
+            color: #3B82F6;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .term-voice:active,
+        .term-voice.recording {
+            transform: scale(0.92);
+            background: #3B82F6;
+            color: white;
+        }
+
+        .term-voice.recording {
+            animation: voice-pulse 1s infinite;
+        }
+
+        @keyframes voice-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .term-voice svg {
+            width: 18px;
+            height: 18px;
+        }
+
         /* Stream Footer */
         .stream-footer {
             display: flex;
@@ -1783,6 +1817,9 @@
                 <input type="text" class="term-input" id="term-input" placeholder="Type command..." autocomplete="off" autocapitalize="off" spellcheck="false">
                 <button class="term-send" id="term-send">
                     <i data-lucide="corner-down-left"></i>
+                </button>
+                <button class="term-voice" id="term-voice" title="Voice to text">
+                    <i data-lucide="mic"></i>
                 </button>
                 <button class="term-upload" id="term-upload" title="Upload & paste image">
                     <i data-lucide="image-plus"></i>
@@ -3101,6 +3138,51 @@
                     reader.readAsDataURL(file);
                     imageInput.value = ''; // Reset for next upload
                 });
+            }
+
+            // Voice-to-text button
+            const voiceBtn = document.getElementById('term-voice');
+            if (voiceBtn && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                let isRecording = false;
+
+                voiceBtn.addEventListener('click', () => {
+                    if (isRecording) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                        voiceBtn.classList.add('recording');
+                        showToast('Listening...', 'mic');
+                        isRecording = true;
+                    }
+                });
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    if (termInput) {
+                        termInput.value = transcript;
+                    }
+                    showToast('Voice captured', 'check');
+                };
+
+                recognition.onend = () => {
+                    voiceBtn.classList.remove('recording');
+                    isRecording = false;
+                };
+
+                recognition.onerror = (event) => {
+                    voiceBtn.classList.remove('recording');
+                    isRecording = false;
+                    showToast('Voice error: ' + event.error, 'x');
+                };
+            } else if (voiceBtn) {
+                // Hide button if speech recognition not supported
+                voiceBtn.style.display = 'none';
             }
 
             // Enter key in input field
