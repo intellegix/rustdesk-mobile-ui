@@ -857,35 +857,158 @@
             height: 48px;
         }
 
-        /* Browser Controls */
-        .browser-controls {
+        /* Browser Keyboard Controls */
+        .browser-keyboard {
             display: none;
             flex-direction: column;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
             flex-shrink: 0;
+            padding-bottom: 10px;
         }
 
-        .browser-controls.show {
+        .browser-keyboard.show {
             display: flex;
         }
 
-        .browser-nav-row,
-        .browser-tab-row {
+        /* Chrome Tab Switcher (1-9) */
+        .browser-tab-switcher {
             display: flex;
+            gap: 6px;
             padding: 10px 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chrome-tab-btn {
+            min-width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .chrome-tab-btn:active {
+            transform: scale(0.92);
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .browser-nav-row {
+            display: flex;
+            padding: 8px 16px;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .browser-quick-keys {
+            display: flex;
+            padding: 8px 16px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .chrome-key {
+            min-width: 44px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .chrome-key:active {
+            transform: scale(0.92);
+            background: var(--bg-tertiary);
+        }
+
+        .chrome-key-accent {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3B82F6;
+            color: #3B82F6;
+        }
+
+        .chrome-key-accent:active {
+            background: #3B82F6;
+            color: white;
+        }
+
+        .browser-input-row {
+            display: flex;
+            padding: 8px 16px;
             gap: 10px;
             align-items: center;
         }
 
-        .browser-tab-row {
-            padding-top: 0;
-            border-top: 1px solid var(--border-color);
-            padding-top: 10px;
+        .browser-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
         }
 
-        .browser-tab-spacer {
-            flex: 1;
+        .browser-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .browser-clear-btn,
+        .browser-voice-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .browser-clear-btn svg,
+        .browser-voice-btn svg {
+            width: 18px;
+            height: 18px;
+            color: var(--text-secondary);
+        }
+
+        .browser-clear-btn:active,
+        .browser-voice-btn:active {
+            transform: scale(0.92);
+        }
+
+        .browser-voice-btn {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3B82F6;
+        }
+
+        .browser-voice-btn svg {
+            color: #3B82F6;
+        }
+
+        .browser-voice-btn.recording {
+            animation: voice-pulse 1s infinite;
         }
 
         .mobile-view-btn {
@@ -904,7 +1027,7 @@
             height: 44px;
             border-radius: 10px;
             background: var(--bg-elevated);
-            border: none;
+            border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -923,12 +1046,31 @@
             color: var(--text-primary);
         }
 
-        .browser-url-container {
-            flex: 1;
+        .browser-go-btn {
+            width: 50px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--accent-blue);
+            border: none;
             display: flex;
-            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
         }
 
+        .browser-go-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .browser-go-btn:active {
+            transform: scale(0.92);
+            opacity: 0.8;
+        }
+
+        /* Legacy browser-url-input for compatibility */
         .browser-url-input {
             flex: 1;
             padding: 12px 16px;
@@ -1912,38 +2054,67 @@
             <div class="double-tap-hint" id="double-tap-hint">Double-tap to zoom</div>
         </div>
 
-        <!-- Browser Controls (shown for browser windows) -->
-        <div class="browser-controls" id="browser-controls">
+        <!-- Browser Keyboard Controls (shown for browser windows) -->
+        <div class="browser-keyboard" id="browser-controls">
+            <!-- Tab Switcher Row (Ctrl+1-9 to jump to tabs) -->
+            <div class="browser-tab-switcher">
+                <button class="chrome-tab-btn" data-tab="1" title="Ctrl+1">1</button>
+                <button class="chrome-tab-btn" data-tab="2" title="Ctrl+2">2</button>
+                <button class="chrome-tab-btn" data-tab="3" title="Ctrl+3">3</button>
+                <button class="chrome-tab-btn" data-tab="4" title="Ctrl+4">4</button>
+                <button class="chrome-tab-btn" data-tab="5" title="Ctrl+5">5</button>
+                <button class="chrome-tab-btn" data-tab="6" title="Ctrl+6">6</button>
+                <button class="chrome-tab-btn" data-tab="7" title="Ctrl+7">7</button>
+                <button class="chrome-tab-btn" data-tab="8" title="Ctrl+8">8</button>
+                <button class="chrome-tab-btn" data-tab="9" title="Ctrl+9 (Last)">9</button>
+            </div>
+            <!-- Navigation Row -->
             <div class="browser-nav-row">
-                <button class="browser-nav-btn" id="browser-back">
+                <button class="browser-nav-btn" id="browser-back" title="Back">
                     <i data-lucide="arrow-left"></i>
                 </button>
-                <button class="browser-nav-btn" id="browser-forward">
+                <button class="browser-nav-btn" id="browser-forward" title="Forward">
                     <i data-lucide="arrow-right"></i>
                 </button>
-                <button class="browser-nav-btn" id="browser-refresh">
+                <button class="browser-nav-btn" id="browser-refresh" title="Refresh">
                     <i data-lucide="refresh-cw"></i>
                 </button>
-                <div class="browser-url-container">
-                    <input type="url" class="browser-url-input" id="browser-url" placeholder="Enter URL...">
-                    <button class="browser-go-btn" id="browser-go">Go</button>
-                </div>
-            </div>
-            <div class="browser-tab-row">
-                <button class="browser-nav-btn" id="chrome-prev-tab" title="Previous tab">
+                <button class="browser-nav-btn" id="chrome-prev-tab" title="Prev Tab">
                     <i data-lucide="chevron-left"></i>
                 </button>
-                <button class="browser-nav-btn" id="chrome-new-tab" title="New tab">
+                <button class="browser-nav-btn" id="chrome-new-tab" title="New Tab">
                     <i data-lucide="plus"></i>
                 </button>
-                <button class="browser-nav-btn" id="chrome-close-tab" title="Close tab">
+                <button class="browser-nav-btn" id="chrome-close-tab" title="Close Tab">
                     <i data-lucide="x"></i>
                 </button>
-                <button class="browser-nav-btn" id="chrome-next-tab" title="Next tab">
+                <button class="browser-nav-btn" id="chrome-next-tab" title="Next Tab">
                     <i data-lucide="chevron-right"></i>
                 </button>
-                <div class="browser-tab-spacer"></div>
-                <button class="browser-nav-btn mobile-view-btn" id="chrome-mobile-view" title="Toggle mobile view">
+            </div>
+            <!-- Quick Action Keys -->
+            <div class="browser-quick-keys">
+                <button class="chrome-key" data-action="scroll-up" title="Scroll Up">↑</button>
+                <button class="chrome-key" data-action="scroll-down" title="Scroll Down">↓</button>
+                <button class="chrome-key" data-action="page-up" title="Page Up">PgUp</button>
+                <button class="chrome-key" data-action="page-down" title="Page Down">PgDn</button>
+                <button class="chrome-key" data-action="home" title="Go to Top">Top</button>
+                <button class="chrome-key" data-action="end" title="Go to Bottom">End</button>
+                <button class="chrome-key chrome-key-accent" data-action="find" title="Find (Ctrl+F)">Find</button>
+            </div>
+            <!-- URL/Search Input Row -->
+            <div class="browser-input-row">
+                <button class="browser-clear-btn" id="browser-clear" title="Clear">
+                    <i data-lucide="x"></i>
+                </button>
+                <input type="text" class="browser-input" id="browser-url" placeholder="Search or enter URL..." autocomplete="off" autocapitalize="off" spellcheck="false">
+                <button class="browser-go-btn" id="browser-go" title="Go">
+                    <i data-lucide="arrow-right"></i>
+                </button>
+                <button class="browser-voice-btn" id="browser-voice" title="Voice search">
+                    <i data-lucide="mic"></i>
+                </button>
+                <button class="browser-nav-btn mobile-view-btn" id="chrome-mobile-view" title="Mobile view">
                     <i data-lucide="smartphone"></i>
                 </button>
             </div>
@@ -2082,7 +2253,18 @@
         }
 
         function getRecentDirectories() {
-            return JSON.parse(localStorage.getItem(RECENT_DIRS_KEY) || '[]');
+            const stored = JSON.parse(localStorage.getItem(RECENT_DIRS_KEY) || '[]');
+            if (stored.length > 0) return stored;
+
+            // Default directories for Windows when none have been visited yet
+            return [
+                'C:\\Users\\AustinKidwell\\Desktop',
+                'C:\\Users\\AustinKidwell\\Documents',
+                'C:\\Users\\AustinKidwell\\Downloads',
+                'C:\\Users\\AustinKidwell\\ASR Dropbox\\Austin Kidwell\\02_DevelopmentProjects',
+                'C:\\',
+                'D:\\'
+            ];
         }
 
         function shortenPath(path) {
@@ -3314,6 +3496,111 @@
             document.getElementById('chrome-mobile-view').addEventListener('click', () => {
                 streamController.chromeMobileView();
             });
+
+            // Chrome tab switcher (1-9) - Ctrl+1-9 to jump to tabs
+            const chromeTabBtns = document.querySelectorAll('.chrome-tab-btn');
+            chromeTabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabNum = btn.dataset.tab;
+                    // Ctrl+1-9 jumps to specific tab in Chrome
+                    sendTerminalKey(tabNum, { ctrl: true });
+                    showToast('Tab ' + tabNum, 'layout-grid');
+                });
+            });
+
+            // Chrome quick action keys
+            const chromeKeys = document.querySelectorAll('.chrome-key');
+            chromeKeys.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const action = btn.dataset.action;
+                    switch(action) {
+                        case 'scroll-up':
+                            streamController.sendRemoteScroll(0, -100);
+                            showToast('Scroll up', 'arrow-up');
+                            break;
+                        case 'scroll-down':
+                            streamController.sendRemoteScroll(0, 100);
+                            showToast('Scroll down', 'arrow-down');
+                            break;
+                        case 'page-up':
+                            sendTerminalKey('PageUp', {});
+                            showToast('Page up', 'chevrons-up');
+                            break;
+                        case 'page-down':
+                            sendTerminalKey('PageDown', {});
+                            showToast('Page down', 'chevrons-down');
+                            break;
+                        case 'home':
+                            sendTerminalKey('Home', { ctrl: true });
+                            showToast('Top', 'arrow-up-to-line');
+                            break;
+                        case 'end':
+                            sendTerminalKey('End', { ctrl: true });
+                            showToast('Bottom', 'arrow-down-to-line');
+                            break;
+                        case 'find':
+                            sendTerminalKey('f', { ctrl: true });
+                            showToast('Find', 'search');
+                            break;
+                    }
+                });
+            });
+
+            // Browser input clear button
+            const browserClear = document.getElementById('browser-clear');
+            if (browserClear) {
+                browserClear.addEventListener('click', () => {
+                    const browserInput = document.getElementById('browser-url');
+                    if (browserInput) {
+                        browserInput.value = '';
+                        browserInput.blur();
+                        showToast('Cleared', 'x');
+                    }
+                });
+            }
+
+            // Browser voice search button
+            const browserVoice = document.getElementById('browser-voice');
+            if (browserVoice && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                let isRecording = false;
+
+                browserVoice.addEventListener('click', () => {
+                    if (isRecording) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                        browserVoice.classList.add('recording');
+                        showToast('Listening...', 'mic');
+                        isRecording = true;
+                    }
+                });
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    const browserInput = document.getElementById('browser-url');
+                    if (browserInput) {
+                        browserInput.value = transcript;
+                        showToast('Got: ' + transcript.substring(0, 20) + '...', 'mic');
+                    }
+                };
+
+                recognition.onend = () => {
+                    browserVoice.classList.remove('recording');
+                    isRecording = false;
+                };
+
+                recognition.onerror = () => {
+                    browserVoice.classList.remove('recording');
+                    isRecording = false;
+                    showToast('Voice error', 'mic-off');
+                };
+            }
 
             // Zoom controls
             document.getElementById('zoom-in').addEventListener('click', () => {
