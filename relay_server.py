@@ -414,6 +414,19 @@ async def chrome_prev_tab(window_id: str):
     return await relay_to_pc(f"/api/windows/{window_id}/chrome/prev-tab", "POST")
 
 
+# Folders API endpoints
+@app.post("/api/folders/search")
+async def folders_search(request: Request):
+    data = await request.json()
+    return await relay_to_pc("/api/folders/search", "POST", data)
+
+
+@app.post("/api/folders/open")
+async def folders_open(request: Request):
+    data = await request.json()
+    return await relay_to_pc("/api/folders/open", "POST", data)
+
+
 @app.websocket("/ws/pc")
 async def pc_websocket(websocket: WebSocket):
     """WebSocket endpoint for the PC client."""
