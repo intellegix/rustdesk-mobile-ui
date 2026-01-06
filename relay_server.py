@@ -246,12 +246,9 @@ async def relay_status():
 @app.get("/api/hosts")
 async def list_hosts():
     """List all connected host PCs."""
-    # Only return hosts with capabilities (real connections)
-    real_hosts = [
-        host.to_dict() for host in pc_connections.values()
-        if host.capabilities  # Only hosts that sent capabilities
-    ]
-    return {"hosts": real_hosts}
+    return {
+        "hosts": [host.to_dict() for host in pc_connections.values()]
+    }
 
 
 @app.post("/api/hosts/cleanup")
