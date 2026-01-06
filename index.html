@@ -2011,14 +2011,67 @@
             background: var(--bg-elevated);
             border: 1px solid var(--border-color);
             border-radius: 16px;
-            padding: 12px;
-            min-width: 280px;
+            padding: 0;
+            min-width: 320px;
+            max-width: 95vw;
+            max-height: 70vh;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
             margin-bottom: 8px;
             z-index: 100;
+            overflow: hidden;
         }
 
         .claude-menu.show {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tab System */
+        .claude-menu-tabs {
+            display: flex;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 4px;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .claude-menu-tab {
+            flex: 1;
+            padding: 8px 4px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .claude-menu-tab:active {
+            transform: scale(0.95);
+        }
+
+        .claude-menu-tab.active {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .claude-menu-tab[data-tab="keys"].active { background: #8B5CF6; }
+        .claude-menu-tab[data-tab="cmds"].active { background: #10B981; }
+        .claude-menu-tab[data-tab="vim"].active { background: #F59E0B; }
+        .claude-menu-tab[data-tab="multi"].active { background: #06B6D4; }
+
+        /* Panel Container */
+        .claude-menu-panel {
+            display: none;
+            padding: 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .claude-menu-panel.active {
             display: block;
         }
 
@@ -2151,6 +2204,115 @@
         }
         .claude-menu-btn.compact .btn-key {
             font-size: 14px;
+        }
+
+        /* Slash Command Buttons - Emerald theme */
+        .claude-cmd-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10B981;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin: 3px;
+        }
+
+        .claude-cmd-btn:active {
+            transform: scale(0.92);
+            background: #10B981;
+            color: white;
+        }
+
+        .claude-cmd-btn .cmd-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .claude-cmds-grid {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -3px;
+        }
+
+        /* Vim Mode Buttons - Amber theme */
+        .claude-vim-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: rgba(245, 158, 11, 0.15);
+            border: 2px solid #F59E0B;
+            color: #F59E0B;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            transition: all 0.15s ease;
+        }
+
+        .claude-vim-btn:active {
+            transform: scale(0.92);
+            background: #F59E0B;
+            color: white;
+        }
+
+        .claude-vim-btn .vim-label {
+            font-size: 8px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .vim-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        /* Multiline Buttons - Cyan theme */
+        .claude-multi-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 10px 8px;
+            border-radius: 8px;
+            background: rgba(6, 182, 212, 0.15);
+            border: 2px solid #06B6D4;
+            color: #06B6D4;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            transition: all 0.15s ease;
+        }
+
+        .claude-multi-btn:active {
+            transform: scale(0.92);
+            background: #06B6D4;
+            color: white;
+        }
+
+        .claude-multi-btn .multi-key {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .claude-multi-btn .multi-label {
+            font-size: 9px;
+            opacity: 0.8;
         }
 
         .stream-action.claude-btn {
@@ -2895,117 +3057,221 @@
                     <span class="stream-action-label">Claude</span>
                 </button>
                 <div class="claude-menu" id="claude-menu">
-                    <!-- Section: Responses -->
-                    <div class="claude-menu-section">
-                        <div class="claude-menu-title">Responses</div>
-                        <div class="claude-menu-row">
-                            <button class="claude-menu-btn yes" id="cm-yes">
-                                <span class="btn-key">Y</span>
-                                <span class="btn-label">Yes</span>
-                            </button>
-                            <button class="claude-menu-btn no" id="cm-no">
-                                <span class="btn-key">N</span>
-                                <span class="btn-label">No</span>
-                            </button>
-                            <button class="claude-menu-btn skip" id="cm-skip">
-                                <span class="btn-key">S</span>
-                                <span class="btn-label">Skip</span>
-                            </button>
-                            <button class="claude-menu-btn cancel" id="cm-cancel">
-                                <span class="btn-key">^C</span>
-                                <span class="btn-label">Cancel</span>
-                            </button>
+                    <!-- Tab Buttons -->
+                    <div class="claude-menu-tabs">
+                        <button class="claude-menu-tab active" data-tab="keys">Keys</button>
+                        <button class="claude-menu-tab" data-tab="cmds">/Cmds</button>
+                        <button class="claude-menu-tab" data-tab="vim">Vim</button>
+                        <button class="claude-menu-tab" data-tab="multi">Multi</button>
+                    </div>
+
+                    <!-- Panel: Keys -->
+                    <div class="claude-menu-panel active" id="panel-keys">
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Responses</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn yes" id="cm-yes"><span class="btn-key">Y</span><span class="btn-label">Yes</span></button>
+                                <button class="claude-menu-btn no" id="cm-no"><span class="btn-key">N</span><span class="btn-label">No</span></button>
+                                <button class="claude-menu-btn skip" id="cm-skip"><span class="btn-key">S</span><span class="btn-label">Skip</span></button>
+                                <button class="claude-menu-btn cancel" id="cm-cancel"><span class="btn-key">^C</span><span class="btn-label">Cancel</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Options</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn option" id="cm-opt-1"><span class="btn-key">1</span></button>
+                                <button class="claude-menu-btn option" id="cm-opt-2"><span class="btn-key">2</span></button>
+                                <button class="claude-menu-btn option" id="cm-opt-3"><span class="btn-key">3</span></button>
+                                <button class="claude-menu-btn option" id="cm-opt-4"><span class="btn-key">4</span></button>
+                                <button class="claude-menu-btn option" id="cm-opt-5"><span class="btn-key">5</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Navigation</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn nav compact" id="cm-up"><span class="btn-key">↑</span><span class="btn-label">Prev</span></button>
+                                <button class="claude-menu-btn nav compact" id="cm-down"><span class="btn-key">↓</span><span class="btn-label">Next</span></button>
+                                <button class="claude-menu-btn nav compact" id="cm-home"><span class="btn-key">⇱</span><span class="btn-label">Home</span></button>
+                                <button class="claude-menu-btn nav compact" id="cm-end"><span class="btn-key">⇲</span><span class="btn-label">End</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Input</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn action compact" id="cm-enter"><span class="btn-key">↵</span><span class="btn-label">Enter</span></button>
+                                <button class="claude-menu-btn action compact" id="cm-tab"><span class="btn-key">⇥</span><span class="btn-label">Tab</span></button>
+                                <button class="claude-menu-btn action compact" id="cm-esc"><span class="btn-key">Esc</span><span class="btn-label">Exit</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Terminal</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn ctrl compact" id="cm-clear"><span class="btn-key">^L</span><span class="btn-label">Clear</span></button>
+                                <button class="claude-menu-btn ctrl compact" id="cm-search"><span class="btn-key">^R</span><span class="btn-label">Search</span></button>
+                                <button class="claude-menu-btn ctrl compact" id="cm-verbose"><span class="btn-key">^O</span><span class="btn-label">Verbose</span></button>
+                                <button class="claude-menu-btn ctrl compact" id="cm-exit"><span class="btn-key">^D</span><span class="btn-label">Exit</span></button>
+                            </div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn ctrl compact" id="cm-suspend"><span class="btn-key">^Z</span><span class="btn-label">Suspend</span></button>
+                                <button class="claude-menu-btn ctrl compact" id="cm-background"><span class="btn-key">^B</span><span class="btn-label">BG Task</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Mode</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-menu-btn action compact" id="cm-mode"><span class="btn-key">⇧Tab</span><span class="btn-label">Perms</span></button>
+                                <button class="claude-menu-btn action compact" id="cm-model"><span class="btn-key">Alt+P</span><span class="btn-label">Model</span></button>
+                                <button class="claude-menu-btn action compact" id="cm-rewind"><span class="btn-key">Esc×2</span><span class="btn-label">Rewind</span></button>
+                                <button class="claude-menu-btn action compact" id="cm-paste-img"><span class="btn-key">Alt+V</span><span class="btn-label">Paste</span></button>
+                            </div>
                         </div>
                     </div>
-                    <!-- Section: Options -->
-                    <div class="claude-menu-section">
-                        <div class="claude-menu-title">Select Option</div>
-                        <div class="claude-menu-row">
-                            <button class="claude-menu-btn option" id="cm-opt-1"><span class="btn-key">1</span></button>
-                            <button class="claude-menu-btn option" id="cm-opt-2"><span class="btn-key">2</span></button>
-                            <button class="claude-menu-btn option" id="cm-opt-3"><span class="btn-key">3</span></button>
-                            <button class="claude-menu-btn option" id="cm-opt-4"><span class="btn-key">4</span></button>
-                            <button class="claude-menu-btn option" id="cm-opt-5"><span class="btn-key">5</span></button>
+
+                    <!-- Panel: Slash Commands -->
+                    <div class="claude-menu-panel" id="panel-cmds">
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Session</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="clear"><span class="cmd-name">/clear</span></button>
+                                <button class="claude-cmd-btn" data-cmd="compact"><span class="cmd-name">/compact</span></button>
+                                <button class="claude-cmd-btn" data-cmd="exit"><span class="cmd-name">/exit</span></button>
+                                <button class="claude-cmd-btn" data-cmd="rewind"><span class="cmd-name">/rewind</span></button>
+                                <button class="claude-cmd-btn" data-cmd="rename"><span class="cmd-name">/rename</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Project</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="init"><span class="cmd-name">/init</span></button>
+                                <button class="claude-cmd-btn" data-cmd="add-dir"><span class="cmd-name">/add-dir</span></button>
+                                <button class="claude-cmd-btn" data-cmd="memory"><span class="cmd-name">/memory</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Info</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="help"><span class="cmd-name">/help</span></button>
+                                <button class="claude-cmd-btn" data-cmd="status"><span class="cmd-name">/status</span></button>
+                                <button class="claude-cmd-btn" data-cmd="cost"><span class="cmd-name">/cost</span></button>
+                                <button class="claude-cmd-btn" data-cmd="context"><span class="cmd-name">/context</span></button>
+                                <button class="claude-cmd-btn" data-cmd="usage"><span class="cmd-name">/usage</span></button>
+                                <button class="claude-cmd-btn" data-cmd="stats"><span class="cmd-name">/stats</span></button>
+                                <button class="claude-cmd-btn" data-cmd="todos"><span class="cmd-name">/todos</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Settings</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="config"><span class="cmd-name">/config</span></button>
+                                <button class="claude-cmd-btn" data-cmd="permissions"><span class="cmd-name">/permissions</span></button>
+                                <button class="claude-cmd-btn" data-cmd="privacy-settings"><span class="cmd-name">/privacy</span></button>
+                                <button class="claude-cmd-btn" data-cmd="output-style"><span class="cmd-name">/output-style</span></button>
+                                <button class="claude-cmd-btn" data-cmd="model"><span class="cmd-name">/model</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Tools</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="vim"><span class="cmd-name">/vim</span></button>
+                                <button class="claude-cmd-btn" data-cmd="sandbox"><span class="cmd-name">/sandbox</span></button>
+                                <button class="claude-cmd-btn" data-cmd="terminal-setup"><span class="cmd-name">/terminal-setup</span></button>
+                                <button class="claude-cmd-btn" data-cmd="statusline"><span class="cmd-name">/statusline</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Review</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="review"><span class="cmd-name">/review</span></button>
+                                <button class="claude-cmd-btn" data-cmd="security-review"><span class="cmd-name">/security-review</span></button>
+                                <button class="claude-cmd-btn" data-cmd="pr-comments"><span class="cmd-name">/pr-comments</span></button>
+                                <button class="claude-cmd-btn" data-cmd="export"><span class="cmd-name">/export</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Manage</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="agents"><span class="cmd-name">/agents</span></button>
+                                <button class="claude-cmd-btn" data-cmd="bashes"><span class="cmd-name">/bashes</span></button>
+                                <button class="claude-cmd-btn" data-cmd="hooks"><span class="cmd-name">/hooks</span></button>
+                                <button class="claude-cmd-btn" data-cmd="mcp"><span class="cmd-name">/mcp</span></button>
+                                <button class="claude-cmd-btn" data-cmd="plugin"><span class="cmd-name">/plugin</span></button>
+                                <button class="claude-cmd-btn" data-cmd="ide"><span class="cmd-name">/ide</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Account</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-cmd="login"><span class="cmd-name">/login</span></button>
+                                <button class="claude-cmd-btn" data-cmd="logout"><span class="cmd-name">/logout</span></button>
+                                <button class="claude-cmd-btn" data-cmd="bug"><span class="cmd-name">/bug</span></button>
+                                <button class="claude-cmd-btn" data-cmd="release-notes"><span class="cmd-name">/release-notes</span></button>
+                                <button class="claude-cmd-btn" data-cmd="doctor"><span class="cmd-name">/doctor</span></button>
+                            </div>
                         </div>
                     </div>
-                    <!-- Section: Navigation -->
-                    <div class="claude-menu-section">
-                        <div class="claude-menu-title">History & Navigation</div>
-                        <div class="claude-menu-row">
-                            <button class="claude-menu-btn nav compact" id="cm-up">
-                                <span class="btn-key">↑</span>
-                                <span class="btn-label">Prev</span>
-                            </button>
-                            <button class="claude-menu-btn nav compact" id="cm-down">
-                                <span class="btn-key">↓</span>
-                                <span class="btn-label">Next</span>
-                            </button>
-                            <button class="claude-menu-btn nav compact" id="cm-home">
-                                <span class="btn-key">⇱</span>
-                                <span class="btn-label">Home</span>
-                            </button>
-                            <button class="claude-menu-btn nav compact" id="cm-end">
-                                <span class="btn-key">⇲</span>
-                                <span class="btn-label">End</span>
-                            </button>
+
+                    <!-- Panel: Vim Mode -->
+                    <div class="claude-menu-panel" id="panel-vim">
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Mode Switch</div>
+                            <div class="vim-grid">
+                                <button class="claude-vim-btn" data-vim="Escape"><span>Esc</span><span class="vim-label">NORMAL</span></button>
+                                <button class="claude-vim-btn" data-vim="i"><span>i</span><span class="vim-label">insert</span></button>
+                                <button class="claude-vim-btn" data-vim="I"><span>I</span><span class="vim-label">Insert^</span></button>
+                                <button class="claude-vim-btn" data-vim="a"><span>a</span><span class="vim-label">append</span></button>
+                                <button class="claude-vim-btn" data-vim="A"><span>A</span><span class="vim-label">Append$</span></button>
+                                <button class="claude-vim-btn" data-vim="o"><span>o</span><span class="vim-label">open↓</span></button>
+                                <button class="claude-vim-btn" data-vim="O"><span>O</span><span class="vim-label">open↑</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Navigation</div>
+                            <div class="vim-grid">
+                                <button class="claude-vim-btn" data-vim="h"><span>h</span><span class="vim-label">←</span></button>
+                                <button class="claude-vim-btn" data-vim="j"><span>j</span><span class="vim-label">↓</span></button>
+                                <button class="claude-vim-btn" data-vim="k"><span>k</span><span class="vim-label">↑</span></button>
+                                <button class="claude-vim-btn" data-vim="l"><span>l</span><span class="vim-label">→</span></button>
+                                <button class="claude-vim-btn" data-vim="w"><span>w</span><span class="vim-label">word→</span></button>
+                                <button class="claude-vim-btn" data-vim="b"><span>b</span><span class="vim-label">word←</span></button>
+                                <button class="claude-vim-btn" data-vim="e"><span>e</span><span class="vim-label">end→</span></button>
+                                <button class="claude-vim-btn" data-vim="0"><span>0</span><span class="vim-label">line^</span></button>
+                                <button class="claude-vim-btn" data-vim="$"><span>$</span><span class="vim-label">line$</span></button>
+                                <button class="claude-vim-btn" data-vim="gg"><span>gg</span><span class="vim-label">top</span></button>
+                                <button class="claude-vim-btn" data-vim="G"><span>G</span><span class="vim-label">bottom</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Edit</div>
+                            <div class="vim-grid">
+                                <button class="claude-vim-btn" data-vim="x"><span>x</span><span class="vim-label">del</span></button>
+                                <button class="claude-vim-btn" data-vim="dd"><span>dd</span><span class="vim-label">del line</span></button>
+                                <button class="claude-vim-btn" data-vim="D"><span>D</span><span class="vim-label">del→</span></button>
+                                <button class="claude-vim-btn" data-vim="cc"><span>cc</span><span class="vim-label">change</span></button>
+                                <button class="claude-vim-btn" data-vim="C"><span>C</span><span class="vim-label">change→</span></button>
+                                <button class="claude-vim-btn" data-vim="u"><span>u</span><span class="vim-label">undo</span></button>
+                            </div>
                         </div>
                     </div>
-                    <!-- Section: Input Controls -->
-                    <div class="claude-menu-section">
-                        <div class="claude-menu-title">Input Controls</div>
-                        <div class="claude-menu-row">
-                            <button class="claude-menu-btn action compact" id="cm-enter">
-                                <span class="btn-key">↵</span>
-                                <span class="btn-label">Enter</span>
-                            </button>
-                            <button class="claude-menu-btn action compact" id="cm-tab">
-                                <span class="btn-key">⇥</span>
-                                <span class="btn-label">Tab</span>
-                            </button>
-                            <button class="claude-menu-btn action compact" id="cm-esc">
-                                <span class="btn-key">Esc</span>
-                                <span class="btn-label">Exit</span>
-                            </button>
+
+                    <!-- Panel: Multiline -->
+                    <div class="claude-menu-panel" id="panel-multi">
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Multiline Input</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-multi-btn" id="multi-backslash"><span class="multi-key">\↵</span><span class="multi-label">Escape</span></button>
+                                <button class="claude-multi-btn" id="multi-option"><span class="multi-key">⌥↵</span><span class="multi-label">Option</span></button>
+                                <button class="claude-multi-btn" id="multi-shift"><span class="multi-key">⇧↵</span><span class="multi-label">Shift</span></button>
+                                <button class="claude-multi-btn" id="multi-ctrlj"><span class="multi-key">^J</span><span class="multi-label">LineFeed</span></button>
+                            </div>
                         </div>
-                    </div>
-                    <!-- Section: Terminal Controls -->
-                    <div class="claude-menu-section">
-                        <div class="claude-menu-title">Terminal</div>
-                        <div class="claude-menu-row">
-                            <button class="claude-menu-btn ctrl compact" id="cm-clear">
-                                <span class="btn-key">^L</span>
-                                <span class="btn-label">Clear</span>
-                            </button>
-                            <button class="claude-menu-btn ctrl compact" id="cm-search">
-                                <span class="btn-key">^R</span>
-                                <span class="btn-label">Search</span>
-                            </button>
-                            <button class="claude-menu-btn ctrl compact" id="cm-verbose">
-                                <span class="btn-key">^O</span>
-                                <span class="btn-label">Verbose</span>
-                            </button>
-                            <button class="claude-menu-btn ctrl compact" id="cm-exit">
-                                <span class="btn-key">^D</span>
-                                <span class="btn-label">Exit</span>
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Section: Mode Switching -->
-                    <div class="claude-menu-section">
-                        <div class="claude-menu-title">Mode Switch</div>
-                        <div class="claude-menu-row">
-                            <button class="claude-menu-btn action compact" id="cm-mode">
-                                <span class="btn-key">⇧Tab</span>
-                                <span class="btn-label">Perms</span>
-                            </button>
-                            <button class="claude-menu-btn action compact" id="cm-model">
-                                <span class="btn-key">Alt+P</span>
-                                <span class="btn-label">Model</span>
-                            </button>
-                            <button class="claude-menu-btn action compact" id="cm-rewind">
-                                <span class="btn-key">Esc×2</span>
-                                <span class="btn-label">Rewind</span>
-                            </button>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Quick Prefixes</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-multi-btn" id="prefix-slash"><span class="multi-key">/</span><span class="multi-label">Command</span></button>
+                                <button class="claude-multi-btn" id="prefix-bang"><span class="multi-key">!</span><span class="multi-label">Bash</span></button>
+                                <button class="claude-multi-btn" id="prefix-at"><span class="multi-key">@</span><span class="multi-label">File Ref</span></button>
+                                <button class="claude-multi-btn" id="prefix-hash"><span class="multi-key">#</span><span class="multi-label">Memory</span></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4889,6 +5155,121 @@
                     sendTerminalKey('Escape', {});
                     setTimeout(() => sendTerminalKey('Escape', {}), 100);
                     showToast('Rewind', 'rewind');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // New key handlers: Suspend, Background, Paste Image
+                document.getElementById('cm-suspend')?.addEventListener('click', () => {
+                    sendTerminalKey('z', { ctrl: true });
+                    showToast('Suspend (^Z)', 'pause');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-background')?.addEventListener('click', () => {
+                    sendTerminalKey('b', { ctrl: true });
+                    showToast('Background (^B)', 'layers');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-paste-img')?.addEventListener('click', () => {
+                    sendTerminalKey('v', { alt: true });
+                    showToast('Paste Image (Alt+V)', 'image');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // Tab switching
+                document.querySelectorAll('.claude-menu-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const tabName = tab.dataset.tab;
+                        // Update active tab
+                        document.querySelectorAll('.claude-menu-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        // Update active panel
+                        document.querySelectorAll('.claude-menu-panel').forEach(p => p.classList.remove('active'));
+                        document.getElementById(`panel-${tabName}`)?.classList.add('active');
+                    });
+                });
+
+                // Slash command handlers
+                document.querySelectorAll('.claude-cmd-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const cmd = btn.dataset.cmd;
+                        sendTerminalCommand('/' + cmd);
+                        showToast('/' + cmd, 'terminal');
+                        claudeMenu.classList.remove('show');
+                    });
+                });
+
+                // Vim key handlers
+                document.querySelectorAll('.claude-vim-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const key = btn.dataset.vim;
+                        if (key === 'gg') {
+                            // Special case: gg is two keystrokes
+                            sendTerminalCommand('gg');
+                        } else if (key === 'dd') {
+                            sendTerminalCommand('dd');
+                        } else if (key === 'cc') {
+                            sendTerminalCommand('cc');
+                        } else if (key === 'Escape') {
+                            sendTerminalKey('Escape', {});
+                        } else {
+                            sendTerminalCommand(key);
+                        }
+                        showToast(`Vim: ${key}`, 'edit-3');
+                        claudeMenu.classList.remove('show');
+                    });
+                });
+
+                // Multiline input handlers
+                document.getElementById('multi-backslash')?.addEventListener('click', () => {
+                    sendTerminalCommand('\\');
+                    sendTerminalKey('Enter', {});
+                    showToast('Backslash + Enter', 'corner-down-left');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('multi-option')?.addEventListener('click', () => {
+                    sendTerminalKey('Enter', { alt: true });
+                    showToast('Option + Enter', 'corner-down-left');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('multi-shift')?.addEventListener('click', () => {
+                    sendTerminalKey('Enter', { shift: true });
+                    showToast('Shift + Enter', 'corner-down-left');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('multi-ctrlj')?.addEventListener('click', () => {
+                    sendTerminalKey('j', { ctrl: true });
+                    showToast('Ctrl + J', 'corner-down-left');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // Quick prefix handlers
+                document.getElementById('prefix-slash')?.addEventListener('click', () => {
+                    sendTerminalCommand('/');
+                    showToast('/ (Command)', 'terminal');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('prefix-bang')?.addEventListener('click', () => {
+                    sendTerminalCommand('!');
+                    showToast('! (Bash)', 'terminal-square');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('prefix-at')?.addEventListener('click', () => {
+                    sendTerminalCommand('@');
+                    showToast('@ (File Ref)', 'at-sign');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('prefix-hash')?.addEventListener('click', () => {
+                    sendTerminalCommand('#');
+                    showToast('# (Memory)', 'hash');
                     claudeMenu.classList.remove('show');
                 });
             }
