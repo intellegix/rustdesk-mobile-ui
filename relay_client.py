@@ -53,6 +53,7 @@ except ImportError:
 try:
     import win32gui
     import win32con
+    import win32api
 except ImportError:
     pass
 
@@ -217,7 +218,7 @@ class TerminalSession:
 
 
 class RelayClient:
-    def __init__(self, relay_url: str, auth_token: str):
+    def __init__(self, relay_url: str, auth_token: str, host_id: str = None, host_name: str = None):
         self.relay_url = relay_url.rstrip('/')
         self.auth_token = auth_token
         self.ws = None
@@ -225,6 +226,14 @@ class RelayClient:
         self.active_streams: Dict[str, asyncio.Task] = {}  # window_id -> capture task
         self.stream_options: Dict[str, dict] = {}  # window_id -> {fps, quality, max_width}
         self.terminal_sessions: Dict[str, TerminalSession] = {}  # session_id -> TerminalSession
+
+        # Host identification for multi-host support
+        import socket
+        import platform
+        self.host_id = host_id or socket.gethostname().lower().replace(' ', '-')
+        self.host_name = host_name or socket.gethostname()
+        self.platform = platform.system()
+        self.platform_version = platform.release()
 
     async def handle_request(self, request_id: str, endpoint: str, method: str, data: dict = None) -> dict:
         """Handle an incoming request from the relay."""
@@ -1040,9 +1049,12 @@ Always use backslashes for Windows paths."""
     async def connect(self):
         """Connect to the relay server."""
         ws_url = self.relay_url.replace("https://", "wss://").replace("http://", "ws://")
-        ws_url = f"{ws_url}/ws/pc?token={self.auth_token}"
+        # Include host_id in the URL for multi-host support
+        ws_url = f"{ws_url}/ws/pc?token={self.auth_token}&host_id={self.host_id}"
 
         print(f"Connecting to relay: {ws_url.replace(self.auth_token, '***')}")
+        print(f"Host ID: {self.host_id}")
+        print(f"Host Name: {self.host_name}")
 
         async with aiohttp.ClientSession() as session:
             while self.running:
@@ -1050,6 +1062,21 @@ Always use backslashes for Windows paths."""
                     async with session.ws_connect(ws_url, heartbeat=30) as ws:
                         self.ws = ws
                         print("Connected to relay server!")
+
+                        # Send host registration
+                        await ws.send_json({
+                            "type": "host_register",
+                            "host_id": self.host_id,
+                            "host_name": self.host_name,
+                            "platform": self.platform,
+                            "platform_version": self.platform_version,
+                            "capabilities": {
+                                "window_capture": HAS_CAPTURE,
+                                "volume_control": HAS_PYCAW,
+                                "brightness_control": HAS_SBC,
+                                "keyboard_control": HAS_PYAUTOGUI
+                            }
+                        })
 
                         async for msg in ws:
                             if msg.type == aiohttp.WSMsgType.TEXT:
@@ -1237,9 +1264,13 @@ def main():
     parser.add_argument("relay_url", help="URL of the relay server (e.g., https://your-app.onrender.com)")
     parser.add_argument("--token", "-t", default="Devops$@2026",
                         help="Authentication token (must match relay server)")
+    parser.add_argument("--host-id", "-i", default=None,
+                        help="Custom host ID (default: computer name)")
+    parser.add_argument("--host-name", "-n", default=None,
+                        help="Display name for this host (default: computer name)")
     args = parser.parse_args()
 
-    client = RelayClient(args.relay_url, args.token)
+    client = RelayClient(args.relay_url, args.token, args.host_id, args.host_name)
     asyncio.run(client.run())
 
 

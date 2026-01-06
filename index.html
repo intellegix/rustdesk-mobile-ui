@@ -3232,6 +3232,7 @@
                 this.isScrolling = false;
                 this.accumulatedScroll = 0;
                 this.lastScrollY = 0;
+                this.isRightEdgeScroll = false;  // For fast scrollbar-like scrolling
 
                 this.setupListeners();
             }
@@ -3263,6 +3264,10 @@
                     this.isScrolling = false;
                     this.accumulatedScroll = 0;
                     this.lastScrollY = touch.clientY;
+
+                    // Check if touch is on right edge (last 40px) for fast scrollbar scrolling
+                    const rect = this.container.getBoundingClientRect();
+                    this.isRightEdgeScroll = (touch.clientX > rect.right - 40);
 
                     // Check for double-tap
                     if (now - this.lastTap < 300) {
@@ -3310,19 +3315,21 @@
                     } else if (this.scale <= 1 && this.streamController) {
                         // Scroll for any window when not zoomed
                         const deltaY = this.lastScrollY - touch.clientY;
-                        const deltaX = Math.abs(touch.clientX - this.touchStartX);
                         const totalDeltaY = Math.abs(touch.clientY - this.touchStartY);
 
-                        // Start scrolling if moved more than 10px vertically
-                        if (totalDeltaY > 10 || this.isScrolling) {
+                        // Start scrolling if moved more than 5px vertically (reduced threshold)
+                        if (totalDeltaY > 5 || this.isScrolling) {
                             this.isScrolling = true;
                             e.preventDefault();
 
                             this.accumulatedScroll += deltaY;
 
-                            // Send scroll in batches to reduce messages
-                            if (Math.abs(this.accumulatedScroll) > 20) {
-                                this.streamController.sendRemoteScroll(0, this.accumulatedScroll);
+                            // Send scroll - right edge gets 4x speed like a scrollbar
+                            const scrollMultiplier = this.isRightEdgeScroll ? 4 : 2;
+                            const threshold = this.isRightEdgeScroll ? 5 : 10;
+
+                            if (Math.abs(this.accumulatedScroll) > threshold) {
+                                this.streamController.sendRemoteScroll(0, this.accumulatedScroll * scrollMultiplier);
                                 this.accumulatedScroll = 0;
                             }
                         }
@@ -3337,11 +3344,13 @@
                 const deltaX = Math.abs(touch.clientX - this.touchStartX);
                 const deltaY = Math.abs(touch.clientY - this.touchStartY);
 
-                // Send any remaining scroll
-                if (this.isScrolling && Math.abs(this.accumulatedScroll) > 0) {
-                    this.streamController.sendRemoteScroll(0, this.accumulatedScroll);
+                // Send any remaining scroll with appropriate multiplier
+                if (this.isScrolling && Math.abs(this.accumulatedScroll) > 0 && this.streamController) {
+                    const scrollMultiplier = this.isRightEdgeScroll ? 4 : 2;
+                    this.streamController.sendRemoteScroll(0, this.accumulatedScroll * scrollMultiplier);
                     this.accumulatedScroll = 0;
                 }
+                this.isRightEdgeScroll = false;
 
                 // Detect tap: short duration (< 200ms), small movement (< 15px)
                 const isTap = touchDuration < 200 && deltaX < 15 && deltaY < 15 && !this.isScrolling;

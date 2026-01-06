@@ -28,7 +28,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Connection state
+# Connection state - Multi-host support
+class HostConnection:
+    """Represents a connected host PC."""
+    def __init__(self, ws: WebSocket, host_id: str, host_name: str = None):
+        self.ws = ws
+        self.host_id = host_id
+        self.host_name = host_name or host_id
+        self.platform = "Unknown"
+        self.platform_version = ""
+        self.capabilities = {}
+        self.connected_at = datetime.now()
+
+    def to_dict(self):
+        return {
+            "host_id": self.host_id,
+            "host_name": self.host_name,
+            "platform": self.platform,
+            "platform_version": self.platform_version,
+            "capabilities": self.capabilities,
+            "connected_at": self.connected_at.isoformat()
+        }
+
+
+# Dictionary of connected hosts: host_id -> HostConnection
+pc_connections: dict[str, HostConnection] = {}
+# Currently selected host for each web client (session_id -> host_id)
+selected_host: dict[str, str] = {}
+# Legacy: single connection reference for backwards compatibility
 pc_connection: Optional[WebSocket] = None
 web_connections: list[WebSocket] = []
 pending_requests: dict[str, asyncio.Future] = {}
@@ -200,7 +227,8 @@ async def health_check():
     return {
         "status": "ok",
         "timestamp": datetime.now().isoformat(),
-        "pc_connected": pc_connection is not None,
+        "pc_connected": len(pc_connections) > 0,
+        "hosts_count": len(pc_connections),
         "web_clients": len(web_connections)
     }
 
@@ -209,9 +237,37 @@ async def health_check():
 async def relay_status():
     """Get relay connection status."""
     return {
-        "pc_connected": pc_connection is not None,
-        "web_clients": len(web_connections)
+        "pc_connected": len(pc_connections) > 0,
+        "web_clients": len(web_connections),
+        "hosts_count": len(pc_connections)
     }
+
+
+@app.get("/api/hosts")
+async def list_hosts():
+    """List all connected host PCs."""
+    return {
+        "hosts": [host.to_dict() for host in pc_connections.values()]
+    }
+
+
+@app.post("/api/hosts/select")
+async def select_host(request: Request):
+    """Select a host to control."""
+    data = await request.json()
+    host_id = data.get("host_id")
+
+    if not host_id:
+        raise HTTPException(status_code=400, detail="host_id required")
+
+    if host_id not in pc_connections:
+        raise HTTPException(status_code=404, detail="Host not connected")
+
+    # For now, use a global selected host (can be per-session later)
+    global pc_connection
+    pc_connection = pc_connections[host_id].ws
+
+    return {"status": "selected", "host_id": host_id}
 
 
 async def relay_to_pc(endpoint: str, method: str = "GET", data: dict = None) -> dict:
@@ -476,13 +532,29 @@ async def pc_websocket(websocket: WebSocket):
     if token != AUTH_TOKEN:
         await websocket.close(code=4001, reason="Invalid token")
         return
-    pc_connection = websocket
-    print(f"PC connected from {websocket.client.host}")
 
-    # Notify web clients
+    # Get host_id from query params or generate one
+    host_id = websocket.query_params.get("host_id", f"host-{secrets.token_hex(4)}")
+
+    # Create host connection
+    host = HostConnection(websocket, host_id)
+    pc_connections[host_id] = host
+
+    # Set as active connection if no other hosts connected
+    if pc_connection is None:
+        pc_connection = websocket
+
+    print(f"PC connected: {host_id} from {websocket.client.host}")
+    print(f"Total hosts connected: {len(pc_connections)}")
+
+    # Notify web clients about new host
     for wc in web_connections:
         try:
-            await wc.send_json({"type": "pc_status", "connected": True})
+            await wc.send_json({
+                "type": "host_connected",
+                "host": host.to_dict(),
+                "hosts_count": len(pc_connections)
+            })
         except:
             pass
 
@@ -490,6 +562,25 @@ async def pc_websocket(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
             msg_type = data.get("type", "")
+
+            # Handle host registration message
+            if msg_type == "host_register":
+                host.host_name = data.get("host_name", host_id)
+                host.platform = data.get("platform", "Unknown")
+                host.platform_version = data.get("platform_version", "")
+                host.capabilities = data.get("capabilities", {})
+                print(f"Host registered: {host.host_name} ({host.platform})")
+
+                # Notify web clients about updated host info
+                for wc in web_connections:
+                    try:
+                        await wc.send_json({
+                            "type": "host_updated",
+                            "host": host.to_dict()
+                        })
+                    except:
+                        pass
+                continue
 
             if msg_type == "response":
                 # Handle response to a pending request
@@ -538,12 +629,32 @@ async def pc_websocket(websocket: WebSocket):
                         pass
 
     except WebSocketDisconnect:
-        print("PC disconnected")
-        pc_connection = None
-        # Notify web clients
+        print(f"PC disconnected: {host_id}")
+
+        # Remove from connections
+        pc_connections.pop(host_id, None)
+
+        # If this was the active connection, switch to another or None
+        global pc_connection
+        if pc_connection == websocket:
+            if pc_connections:
+                # Switch to first available host
+                first_host = next(iter(pc_connections.values()))
+                pc_connection = first_host.ws
+                print(f"Switched to host: {first_host.host_id}")
+            else:
+                pc_connection = None
+
+        print(f"Remaining hosts: {len(pc_connections)}")
+
+        # Notify web clients about disconnected host
         for wc in web_connections:
             try:
-                await wc.send_json({"type": "pc_status", "connected": False})
+                await wc.send_json({
+                    "type": "host_disconnected",
+                    "host_id": host_id,
+                    "hosts_count": len(pc_connections)
+                })
             except:
                 pass
 
@@ -554,10 +665,12 @@ async def web_websocket(websocket: WebSocket):
     await websocket.accept()
     web_connections.append(websocket)
 
-    # Send initial status
+    # Send initial status with list of hosts
     await websocket.send_json({
         "type": "pc_status",
-        "connected": pc_connection is not None
+        "connected": len(pc_connections) > 0,
+        "hosts": [host.to_dict() for host in pc_connections.values()],
+        "hosts_count": len(pc_connections)
     })
 
     try:
