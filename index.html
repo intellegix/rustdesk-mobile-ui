@@ -1758,6 +1758,27 @@
             height: 20px;
         }
 
+        .stream-menu-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 16px 4px;
+            margin-top: 4px;
+        }
+
+        .stream-menu-label:first-child {
+            margin-top: 0;
+            padding-top: 4px;
+        }
+
+        .stream-menu-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 8px 0;
+        }
+
         /* ========== MOBILE RESPONSIVE STYLES ========== */
 
         /* Landscape mode - compact UI */
@@ -2030,13 +2051,6 @@
         .zoom-btn svg {
             width: 24px;
             height: 24px;
-        }
-
-        .zoom-divider {
-            width: 1px;
-            height: 32px;
-            background: rgba(255, 255, 255, 0.3);
-            margin: 0 4px;
         }
 
         .zoom-indicator {
@@ -2336,13 +2350,6 @@
                 <button class="zoom-btn" id="zoom-reset">
                     <i data-lucide="maximize-2"></i>
                 </button>
-                <div class="zoom-divider"></div>
-                <button class="zoom-btn" id="window-split-left" title="Snap left">
-                    <i data-lucide="panel-left"></i>
-                </button>
-                <button class="zoom-btn" id="window-split-right" title="Snap right">
-                    <i data-lucide="panel-right"></i>
-                </button>
             </div>
             <div class="double-tap-hint" id="double-tap-hint">Double-tap to zoom</div>
         </div>
@@ -2476,10 +2483,42 @@
                     <span class="stream-action-label">Menu</span>
                 </button>
                 <div class="stream-menu" id="stream-menu">
+                    <div class="stream-menu-label">Window Size</div>
                     <button class="stream-menu-item" id="stream-maximize">
-                        <i data-lucide="square"></i>
+                        <i data-lucide="maximize"></i>
                         <span>Maximize</span>
                     </button>
+                    <button class="stream-menu-item" id="stream-restore">
+                        <i data-lucide="minimize-2"></i>
+                        <span>Restore</span>
+                    </button>
+                    <div class="stream-menu-label">Snap Half</div>
+                    <button class="stream-menu-item" id="stream-snap-left">
+                        <i data-lucide="panel-left"></i>
+                        <span>Left Half</span>
+                    </button>
+                    <button class="stream-menu-item" id="stream-snap-right">
+                        <i data-lucide="panel-right"></i>
+                        <span>Right Half</span>
+                    </button>
+                    <div class="stream-menu-label">Snap Quarter</div>
+                    <button class="stream-menu-item" id="stream-snap-top-left">
+                        <i data-lucide="arrow-up-left"></i>
+                        <span>Top Left</span>
+                    </button>
+                    <button class="stream-menu-item" id="stream-snap-top-right">
+                        <i data-lucide="arrow-up-right"></i>
+                        <span>Top Right</span>
+                    </button>
+                    <button class="stream-menu-item" id="stream-snap-bottom-left">
+                        <i data-lucide="arrow-down-left"></i>
+                        <span>Bottom Left</span>
+                    </button>
+                    <button class="stream-menu-item" id="stream-snap-bottom-right">
+                        <i data-lucide="arrow-down-right"></i>
+                        <span>Bottom Right</span>
+                    </button>
+                    <div class="stream-menu-divider"></div>
                     <button class="stream-menu-item" id="stream-minimize">
                         <i data-lucide="minus"></i>
                         <span>Minimize</span>
@@ -3860,6 +3899,55 @@
                 streamController.maximizeWindow();
             });
 
+            document.getElementById('stream-restore').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/restore`, 'POST');
+                    showToast('Restored', 'minimize-2');
+                }
+            });
+
+            document.getElementById('stream-snap-left').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/left`, 'POST');
+                    showToast('Snapped left', 'panel-left');
+                }
+            });
+
+            document.getElementById('stream-snap-right').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/right`, 'POST');
+                    showToast('Snapped right', 'panel-right');
+                }
+            });
+
+            document.getElementById('stream-snap-top-left').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/top-left`, 'POST');
+                    showToast('Top left', 'arrow-up-left');
+                }
+            });
+
+            document.getElementById('stream-snap-top-right').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/top-right`, 'POST');
+                    showToast('Top right', 'arrow-up-right');
+                }
+            });
+
+            document.getElementById('stream-snap-bottom-left').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/bottom-left`, 'POST');
+                    showToast('Bottom left', 'arrow-down-left');
+                }
+            });
+
+            document.getElementById('stream-snap-bottom-right').addEventListener('click', async () => {
+                if (streamController.currentWindowId) {
+                    await api(`/api/windows/${streamController.currentWindowId}/snap/bottom-right`, 'POST');
+                    showToast('Bottom right', 'arrow-down-right');
+                }
+            });
+
             document.getElementById('stream-close').addEventListener('click', () => {
                 streamController.closeWindow();
                 document.getElementById('stream-menu').classList.remove('show');
@@ -3882,9 +3970,9 @@
                     }
                 });
 
-                // Close menu after action
-                ['stream-maximize', 'stream-minimize'].forEach(id => {
-                    document.getElementById(id).addEventListener('click', () => {
+                // Close menu after any action
+                streamMenu.querySelectorAll('.stream-menu-item').forEach(item => {
+                    item.addEventListener('click', () => {
                         streamMenu.classList.remove('show');
                     });
                 });
@@ -4061,21 +4149,6 @@
             document.getElementById('zoom-reset').addEventListener('click', () => {
                 if (streamController.gestureHandler) {
                     streamController.gestureHandler.reset();
-                }
-            });
-
-            // Window split controls
-            document.getElementById('window-split-left').addEventListener('click', async () => {
-                if (streamController.currentWindowId) {
-                    await api(`/api/windows/${streamController.currentWindowId}/snap/left`, 'POST');
-                    showToast('Snapped left', 'panel-left');
-                }
-            });
-
-            document.getElementById('window-split-right').addEventListener('click', async () => {
-                if (streamController.currentWindowId) {
-                    await api(`/api/windows/${streamController.currentWindowId}/snap/right`, 'POST');
-                    showToast('Snapped right', 'panel-right');
                 }
             });
         }

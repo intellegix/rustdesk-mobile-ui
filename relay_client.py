@@ -294,16 +294,20 @@ class RelayClient:
                     win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
                 return {"status": "maximized"}
 
+            elif endpoint.startswith("/api/windows/") and "/restore" in endpoint:
+                window_id = endpoint.split("/")[3]
+                if HAS_WIN32:
+                    hwnd = int(window_id)
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                return {"status": "restored"}
+
             elif endpoint.startswith("/api/windows/") and "/snap/left" in endpoint:
                 window_id = endpoint.split("/")[3]
                 if HAS_WIN32:
                     hwnd = int(window_id)
-                    # Get screen dimensions
                     screen_width = win32api.GetSystemMetrics(0)
                     screen_height = win32api.GetSystemMetrics(1)
-                    # Restore if maximized
                     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-                    # Snap to left half
                     win32gui.SetWindowPos(hwnd, None, 0, 0, screen_width // 2, screen_height, 0)
                 return {"status": "snapped_left"}
 
@@ -311,14 +315,51 @@ class RelayClient:
                 window_id = endpoint.split("/")[3]
                 if HAS_WIN32:
                     hwnd = int(window_id)
-                    # Get screen dimensions
                     screen_width = win32api.GetSystemMetrics(0)
                     screen_height = win32api.GetSystemMetrics(1)
-                    # Restore if maximized
                     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-                    # Snap to right half
                     win32gui.SetWindowPos(hwnd, None, screen_width // 2, 0, screen_width // 2, screen_height, 0)
                 return {"status": "snapped_right"}
+
+            elif endpoint.startswith("/api/windows/") and "/snap/top-left" in endpoint:
+                window_id = endpoint.split("/")[3]
+                if HAS_WIN32:
+                    hwnd = int(window_id)
+                    screen_width = win32api.GetSystemMetrics(0)
+                    screen_height = win32api.GetSystemMetrics(1)
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    win32gui.SetWindowPos(hwnd, None, 0, 0, screen_width // 2, screen_height // 2, 0)
+                return {"status": "snapped_top_left"}
+
+            elif endpoint.startswith("/api/windows/") and "/snap/top-right" in endpoint:
+                window_id = endpoint.split("/")[3]
+                if HAS_WIN32:
+                    hwnd = int(window_id)
+                    screen_width = win32api.GetSystemMetrics(0)
+                    screen_height = win32api.GetSystemMetrics(1)
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    win32gui.SetWindowPos(hwnd, None, screen_width // 2, 0, screen_width // 2, screen_height // 2, 0)
+                return {"status": "snapped_top_right"}
+
+            elif endpoint.startswith("/api/windows/") and "/snap/bottom-left" in endpoint:
+                window_id = endpoint.split("/")[3]
+                if HAS_WIN32:
+                    hwnd = int(window_id)
+                    screen_width = win32api.GetSystemMetrics(0)
+                    screen_height = win32api.GetSystemMetrics(1)
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    win32gui.SetWindowPos(hwnd, None, 0, screen_height // 2, screen_width // 2, screen_height // 2, 0)
+                return {"status": "snapped_bottom_left"}
+
+            elif endpoint.startswith("/api/windows/") and "/snap/bottom-right" in endpoint:
+                window_id = endpoint.split("/")[3]
+                if HAS_WIN32:
+                    hwnd = int(window_id)
+                    screen_width = win32api.GetSystemMetrics(0)
+                    screen_height = win32api.GetSystemMetrics(1)
+                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                    win32gui.SetWindowPos(hwnd, None, screen_width // 2, screen_height // 2, screen_width // 2, screen_height // 2, 0)
+                return {"status": "snapped_bottom_right"}
 
             elif endpoint == "/api/system/volume" and method == "GET":
                 return get_volume()

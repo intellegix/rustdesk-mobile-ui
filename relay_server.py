@@ -415,6 +415,11 @@ async def chrome_prev_tab(window_id: str):
 
 
 # Window snap/split endpoints
+@app.post("/api/windows/{window_id}/restore")
+async def window_restore(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/restore", "POST")
+
+
 @app.post("/api/windows/{window_id}/snap/left")
 async def window_snap_left(window_id: str):
     return await relay_to_pc(f"/api/windows/{window_id}/snap/left", "POST")
@@ -423,6 +428,26 @@ async def window_snap_left(window_id: str):
 @app.post("/api/windows/{window_id}/snap/right")
 async def window_snap_right(window_id: str):
     return await relay_to_pc(f"/api/windows/{window_id}/snap/right", "POST")
+
+
+@app.post("/api/windows/{window_id}/snap/top-left")
+async def window_snap_top_left(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/snap/top-left", "POST")
+
+
+@app.post("/api/windows/{window_id}/snap/top-right")
+async def window_snap_top_right(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/snap/top-right", "POST")
+
+
+@app.post("/api/windows/{window_id}/snap/bottom-left")
+async def window_snap_bottom_left(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/snap/bottom-left", "POST")
+
+
+@app.post("/api/windows/{window_id}/snap/bottom-right")
+async def window_snap_bottom_right(window_id: str):
+    return await relay_to_pc(f"/api/windows/{window_id}/snap/bottom-right", "POST")
 
 
 # Folders API endpoints
