@@ -605,6 +605,95 @@
             border: none;
         }
 
+        /* RustDesk Remote Devices */
+        .rustdesk-devices {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .rustdesk-device {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .rustdesk-device:active {
+            transform: scale(0.98);
+            background: var(--bg-elevated);
+        }
+
+        .device-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .device-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .device-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .device-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .device-id {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .device-connect-btn {
+            background: var(--accent-orange);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .device-connect-btn:active {
+            transform: scale(0.95);
+            background: #ea580c;
+        }
+
+        .device-connect-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .device-connect-btn.connecting {
+            background: var(--text-secondary);
+            pointer-events: none;
+        }
+
         /* Clipboard Section */
         .clipboard-card {
             background: var(--bg-secondary);
@@ -2305,6 +2394,26 @@
                     </div>
                 </div>
 
+                <!-- RustDesk Remote Devices -->
+                <div class="controls-section">
+                    <div class="section-title">Remote Devices</div>
+                    <div class="rustdesk-devices" id="rustdesk-devices">
+                        <div class="rustdesk-device" data-device-id="415005013">
+                            <div class="device-icon">
+                                <i data-lucide="monitor"></i>
+                            </div>
+                            <div class="device-info">
+                                <div class="device-name">Network Device</div>
+                                <div class="device-id">ID: 415005013</div>
+                            </div>
+                            <button class="device-connect-btn" onclick="connectRustDesk('415005013')">
+                                <i data-lucide="play"></i>
+                                Connect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Volume Control -->
                 <div class="controls-section">
                     <div class="section-title">Audio</div>
@@ -2773,7 +2882,7 @@
                 headers: { 'Content-Type': 'application/json' }
             };
             if (data) options.body = JSON.stringify(data);
-            
+
             try {
                 const res = await fetch(`${API_BASE}${endpoint}`, options);
                 return await res.json();
@@ -2781,6 +2890,39 @@
                 console.error('API error:', err);
                 showToast('Connection error', 'alert-circle');
                 return null;
+            }
+        }
+
+        // Connect to RustDesk device
+        async function connectRustDesk(deviceId) {
+            const btn = document.querySelector(`.rustdesk-device[data-device-id="${deviceId}"] .device-connect-btn`);
+            if (btn) {
+                btn.classList.add('connecting');
+                btn.innerHTML = '<i data-lucide="loader"></i> Connecting...';
+                lucide.createIcons();
+            }
+
+            showToast('Connecting to RustDesk...', 'monitor');
+
+            try {
+                const result = await api('/api/rustdesk/connect', 'POST', { device_id: deviceId });
+
+                if (result && result.status === 'connecting') {
+                    showToast(`Connected to ${deviceId}`, 'check-circle');
+                } else if (result && result.error) {
+                    showToast(result.error, 'alert-circle');
+                } else {
+                    showToast('Connection failed', 'alert-circle');
+                }
+            } catch (err) {
+                console.error('RustDesk connect error:', err);
+                showToast('Connection error', 'alert-circle');
+            } finally {
+                if (btn) {
+                    btn.classList.remove('connecting');
+                    btn.innerHTML = '<i data-lucide="play"></i> Connect';
+                    lucide.createIcons();
+                }
             }
         }
 

@@ -467,6 +467,42 @@ class RelayClient:
             elif endpoint == "/api/rustdesk/status" and method == "GET":
                 return get_rustdesk_status()
 
+            elif endpoint == "/api/rustdesk/connect" and method == "POST":
+                # Connect to a RustDesk device by ID
+                device_id = data.get("device_id") if data else None
+                if not device_id:
+                    return {"error": "device_id required"}
+                try:
+                    # Find RustDesk executable
+                    rustdesk_paths = [
+                        r"C:\Program Files\RustDesk\rustdesk.exe",
+                        r"C:\Program Files (x86)\RustDesk\rustdesk.exe",
+                        os.path.expanduser(r"~\AppData\Local\RustDesk\rustdesk.exe"),
+                    ]
+                    rustdesk_exe = None
+                    for path in rustdesk_paths:
+                        if os.path.exists(path):
+                            rustdesk_exe = path
+                            break
+
+                    if not rustdesk_exe:
+                        return {"error": "RustDesk not found"}
+
+                    # Launch RustDesk with connection
+                    subprocess.Popen([rustdesk_exe, "--connect", str(device_id)])
+                    print(f"[RUSTDESK] Connecting to device: {device_id}")
+                    return {"status": "connecting", "device_id": device_id}
+                except Exception as e:
+                    return {"error": str(e)}
+
+            elif endpoint == "/api/rustdesk/devices" and method == "GET":
+                # Return saved RustDesk devices
+                return {
+                    "devices": [
+                        {"id": "415005013", "name": "Network Device", "description": "Available on current network"}
+                    ]
+                }
+
             elif endpoint == "/api/system/info" and method == "GET":
                 return get_system_info()
 

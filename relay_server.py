@@ -397,6 +397,19 @@ async def get_rustdesk_status():
     return await relay_to_pc("/api/rustdesk/status", "GET")
 
 
+@app.get("/api/rustdesk/devices")
+async def get_rustdesk_devices():
+    """Get saved RustDesk devices."""
+    return await relay_to_pc("/api/rustdesk/devices", "GET")
+
+
+@app.post("/api/rustdesk/connect")
+async def rustdesk_connect(request: Request):
+    """Connect to a RustDesk device."""
+    data = await request.json()
+    return await relay_to_pc("/api/rustdesk/connect", "POST", data)
+
+
 @app.get("/api/system/info")
 async def get_system_info():
     return await relay_to_pc("/api/system/info", "GET")
