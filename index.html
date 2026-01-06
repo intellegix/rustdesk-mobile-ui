@@ -4736,6 +4736,14 @@
 
                 // Start the stream via WebSocket
                 if (ws && ws.readyState === WebSocket.OPEN) {
+                    // Auto-snap to left half for mobile-friendly view
+                    try {
+                        await api(`/api/windows/${windowId}/snap/left`, 'POST');
+                        console.log('[STREAM] Auto-snapped window to left half for mobile view');
+                    } catch (e) {
+                        console.warn('[STREAM] Could not auto-snap window:', e);
+                    }
+
                     // Optimized for smoother streaming
                     const isTerminal = this.windowType === 'terminal';
                     ws.send(JSON.stringify({
