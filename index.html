@@ -6110,13 +6110,23 @@
                     scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
                     scrollWheel.classList.add(direction === 'up' ? 'scrolling-up' : 'scrolling-down');
 
-                    // Send scroll commands (Shift+PageUp/PageDown for terminal scrollback)
-                    for (let i = 0; i < scrollCount; i++) {
-                        console.log('[SCROLL] Sending key:', direction === 'up' ? 'Shift+PageUp' : 'Shift+PageDown');
+                    // Send scroll commands using remote scroll (simulates mouse wheel)
+                    const scrollAmount = scrollCount * 120; // Standard mouse wheel delta
+                    console.log('[SCROLL] Sending remote scroll:', direction, 'amount:', scrollAmount);
+                    if (streamController && streamController.currentWindowId) {
                         if (direction === 'up') {
-                            sendTerminalKey('PageUp', { shift: true });
+                            streamController.sendRemoteScroll(0, -scrollAmount);
                         } else {
-                            sendTerminalKey('PageDown', { shift: true });
+                            streamController.sendRemoteScroll(0, scrollAmount);
+                        }
+                    } else {
+                        console.log('[SCROLL] No streamController or window, falling back to keys');
+                        for (let i = 0; i < scrollCount; i++) {
+                            if (direction === 'up') {
+                                sendTerminalKey('PageUp', { shift: true });
+                            } else {
+                                sendTerminalKey('PageDown', { shift: true });
+                            }
                         }
                     }
 
