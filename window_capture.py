@@ -222,16 +222,16 @@ class WindowCapture:
             mfc_dc.DeleteDC()
             win32gui.ReleaseDC(hwnd, hwnd_dc)
 
-            # Resize for mobile if needed
+            # Resize for mobile if needed - use BILINEAR for speed/quality balance
             if width > max_width:
                 ratio = max_width / width
                 new_height = int(height * ratio)
-                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+                img = img.resize((max_width, new_height), Image.Resampling.BILINEAR)
                 width, height = max_width, new_height
 
-            # Convert to JPEG
+            # Convert to JPEG - fast encoding settings
             buffer = io.BytesIO()
-            img.save(buffer, format='JPEG', quality=quality, optimize=True)
+            img.save(buffer, format='JPEG', quality=quality, subsampling=2, progressive=False)
             buffer.seek(0)
 
             # Encode to base64

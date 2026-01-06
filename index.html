@@ -3843,15 +3843,15 @@
 
                 // Start the stream via WebSocket
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    // Use higher quality for crisp text, especially terminals
+                    // Optimized for smoother streaming
                     const isTerminal = this.windowType === 'terminal';
                     ws.send(JSON.stringify({
                         type: 'stream_start',
                         window_id: windowId,
                         options: {
-                            fps: isTerminal ? 5 : 8,  // Lower FPS for terminals (less motion)
-                            quality: 95,  // High quality for crisp text
-                            max_width: 1200  // Capture at higher res, scale down in CSS
+                            fps: isTerminal ? 10 : 15,  // Higher FPS for smoother display
+                            quality: 70,  // Lower quality for faster encoding (still readable)
+                            max_width: 1000  // Smaller max width for faster transfer
                         }
                     }));
                     this.streamActive = true;
