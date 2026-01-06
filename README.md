@@ -1,4 +1,4 @@
-# Intellegix Desktop Remote
+# Intellegix Remote Mobile
 
 A mobile-first web interface for remote desktop control via WebSocket relay. Control your PC from any mobile device with a beautiful, responsive touch interface.
 
