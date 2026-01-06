@@ -5883,28 +5883,35 @@
         }
 
         function setupScrollWheel() {
+            console.log('[SCROLL] setupScrollWheel() called');
             const scrollWheel = document.getElementById('scroll-wheel');
-            if (!scrollWheel) return;
+
+            if (!scrollWheel) {
+                console.error('[SCROLL] ERROR: scroll-wheel element NOT FOUND!');
+                return;
+            }
+            console.log('[SCROLL] Found scroll wheel element:', scrollWheel);
 
             let isDragging = false;
             let startY = 0;
             let lastY = 0;
             let scrollAccumulator = 0;
             const scrollThreshold = 15; // pixels to trigger one scroll
-            let scrollInterval = null;
-            let currentDirection = null;
 
             function startDrag(e) {
+                console.log('[SCROLL] startDrag() fired, event type:', e.type);
                 isDragging = true;
                 startY = e.touches ? e.touches[0].clientY : e.clientY;
                 lastY = startY;
                 scrollAccumulator = 0;
-                scrollWheel.style.cursor = 'grabbing';
-                console.log('[SCROLL] Drag started');
+                scrollWheel.style.borderColor = '#F97316'; // Orange on drag
+                console.log('[SCROLL] isDragging set to true, startY:', startY);
             }
 
             function doDrag(e) {
-                if (!isDragging) return;
+                if (!isDragging) return; // Silent return for performance (mousemove fires constantly)
+
+                console.log('[SCROLL] doDrag() - isDragging:', isDragging);
                 e.preventDefault();
 
                 const currentY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -5912,13 +5919,12 @@
                 lastY = currentY;
 
                 scrollAccumulator += deltaY;
+                console.log('[SCROLL] deltaY:', deltaY, 'accumulator:', scrollAccumulator);
 
                 // Update visual feedback
                 const inner = scrollWheel.querySelector('.scroll-wheel-inner');
                 if (inner) {
-                    // Rotate the notches based on scroll direction
-                    const rotation = (scrollAccumulator % 360) * 0.5;
-                    inner.style.transform = `translateY(${-deltaY * 0.3}px)`;
+                    inner.style.transform = `translateY(${-deltaY * 0.5}px)`;
                 }
 
                 // Check if we've accumulated enough to trigger a scroll
@@ -5926,55 +5932,62 @@
                     const direction = scrollAccumulator > 0 ? 'up' : 'down';
                     const scrollCount = Math.floor(Math.abs(scrollAccumulator) / scrollThreshold);
 
+                    console.log('[SCROLL] Threshold reached! direction:', direction, 'count:', scrollCount);
+
                     // Visual feedback
                     scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
                     scrollWheel.classList.add(direction === 'up' ? 'scrolling-up' : 'scrolling-down');
 
                     // Send scroll commands (Shift+PageUp/PageDown for terminal scrollback)
                     for (let i = 0; i < scrollCount; i++) {
+                        console.log('[SCROLL] Sending key:', direction === 'up' ? 'Shift+PageUp' : 'Shift+PageDown');
                         if (direction === 'up') {
                             sendTerminalKey('PageUp', { shift: true });
                         } else {
                             sendTerminalKey('PageDown', { shift: true });
                         }
                     }
-                    console.log('[SCROLL]', direction, 'x', scrollCount);
 
                     // Reset accumulator but keep remainder
                     scrollAccumulator = scrollAccumulator % scrollThreshold;
 
                     // Show toast for feedback
-                    if (scrollCount > 0) {
-                        showToast(direction === 'up' ? 'Scroll Up' : 'Scroll Down', direction === 'up' ? 'chevron-up' : 'chevron-down');
-                    }
+                    showToast(direction === 'up' ? 'Scroll Up' : 'Scroll Down', direction === 'up' ? 'chevron-up' : 'chevron-down');
                 }
             }
 
-            function endDrag() {
+            function endDrag(e) {
+                console.log('[SCROLL] endDrag() fired, isDragging was:', isDragging);
                 if (!isDragging) return;
                 isDragging = false;
-                scrollWheel.style.cursor = 'ns-resize';
+                scrollWheel.style.borderColor = ''; // Reset border
                 scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
 
                 const inner = scrollWheel.querySelector('.scroll-wheel-inner');
                 if (inner) {
                     inner.style.transform = '';
                 }
-                console.log('[SCROLL] Drag ended');
+                console.log('[SCROLL] Drag ended, isDragging now:', isDragging);
             }
 
-            // Touch events
+            // Touch events - attached to scroll wheel element
+            console.log('[SCROLL] Attaching touchstart listener...');
             scrollWheel.addEventListener('touchstart', startDrag, { passive: true });
+            console.log('[SCROLL] Attaching touchmove listener...');
             scrollWheel.addEventListener('touchmove', doDrag, { passive: false });
+            console.log('[SCROLL] Attaching touchend listener...');
             scrollWheel.addEventListener('touchend', endDrag);
             scrollWheel.addEventListener('touchcancel', endDrag);
 
-            // Mouse events for desktop testing
+            // Mouse events - mousedown on element, move/up on document
+            console.log('[SCROLL] Attaching mousedown listener to scrollWheel...');
             scrollWheel.addEventListener('mousedown', startDrag);
+            console.log('[SCROLL] Attaching mousemove listener to document...');
             document.addEventListener('mousemove', doDrag);
+            console.log('[SCROLL] Attaching mouseup listener to document...');
             document.addEventListener('mouseup', endDrag);
 
-            console.log('[SETUP] Scroll wheel setup complete');
+            console.log('[SCROLL] === SCROLL WHEEL SETUP COMPLETE ===');
         }
 
         function setupTerminalControls() {
