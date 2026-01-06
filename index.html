@@ -2108,6 +2108,51 @@
         }
         .claude-menu-btn.option:active { background: #3B82F6; color: white; }
 
+        /* Navigation buttons - cyan */
+        .claude-menu-btn.nav {
+            background: rgba(6, 182, 212, 0.15);
+            border-color: #06B6D4;
+            color: #06B6D4;
+        }
+        .claude-menu-btn.nav:active { background: #06B6D4; color: white; }
+
+        /* Action buttons - purple */
+        .claude-menu-btn.action {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: #8B5CF6;
+            color: #8B5CF6;
+        }
+        .claude-menu-btn.action:active { background: #8B5CF6; color: white; }
+
+        /* Control buttons - amber/yellow */
+        .claude-menu-btn.ctrl {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: #F59E0B;
+            color: #F59E0B;
+        }
+        .claude-menu-btn.ctrl:active { background: #F59E0B; color: white; }
+
+        /* Section divider */
+        .claude-menu-section {
+            border-top: 1px solid var(--border-color);
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        .claude-menu-section:first-of-type {
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        /* Compact button variant */
+        .claude-menu-btn.compact {
+            height: 40px;
+        }
+        .claude-menu-btn.compact .btn-key {
+            font-size: 14px;
+        }
+
         .stream-action.claude-btn {
             background: rgba(139, 92, 246, 0.15);
         }
@@ -2850,42 +2895,118 @@
                     <span class="stream-action-label">Claude</span>
                 </button>
                 <div class="claude-menu" id="claude-menu">
-                    <div class="claude-menu-title">Claude Actions</div>
-                    <div class="claude-menu-row">
-                        <button class="claude-menu-btn yes" id="cm-yes">
-                            <span class="btn-key">Y</span>
-                            <span class="btn-label">Yes</span>
-                        </button>
-                        <button class="claude-menu-btn no" id="cm-no">
-                            <span class="btn-key">N</span>
-                            <span class="btn-label">No</span>
-                        </button>
-                        <button class="claude-menu-btn skip" id="cm-skip">
-                            <span class="btn-key">S</span>
-                            <span class="btn-label">Skip</span>
-                        </button>
-                        <button class="claude-menu-btn cancel" id="cm-cancel">
-                            <span class="btn-key">^C</span>
-                            <span class="btn-label">Cancel</span>
-                        </button>
+                    <!-- Section: Responses -->
+                    <div class="claude-menu-section">
+                        <div class="claude-menu-title">Responses</div>
+                        <div class="claude-menu-row">
+                            <button class="claude-menu-btn yes" id="cm-yes">
+                                <span class="btn-key">Y</span>
+                                <span class="btn-label">Yes</span>
+                            </button>
+                            <button class="claude-menu-btn no" id="cm-no">
+                                <span class="btn-key">N</span>
+                                <span class="btn-label">No</span>
+                            </button>
+                            <button class="claude-menu-btn skip" id="cm-skip">
+                                <span class="btn-key">S</span>
+                                <span class="btn-label">Skip</span>
+                            </button>
+                            <button class="claude-menu-btn cancel" id="cm-cancel">
+                                <span class="btn-key">^C</span>
+                                <span class="btn-label">Cancel</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="claude-menu-title" style="margin-top: 8px;">Select Option</div>
-                    <div class="claude-menu-row">
-                        <button class="claude-menu-btn option" id="cm-opt-1">
-                            <span class="btn-key">1</span>
-                        </button>
-                        <button class="claude-menu-btn option" id="cm-opt-2">
-                            <span class="btn-key">2</span>
-                        </button>
-                        <button class="claude-menu-btn option" id="cm-opt-3">
-                            <span class="btn-key">3</span>
-                        </button>
-                        <button class="claude-menu-btn option" id="cm-opt-4">
-                            <span class="btn-key">4</span>
-                        </button>
-                        <button class="claude-menu-btn option" id="cm-opt-5">
-                            <span class="btn-key">5</span>
-                        </button>
+                    <!-- Section: Options -->
+                    <div class="claude-menu-section">
+                        <div class="claude-menu-title">Select Option</div>
+                        <div class="claude-menu-row">
+                            <button class="claude-menu-btn option" id="cm-opt-1"><span class="btn-key">1</span></button>
+                            <button class="claude-menu-btn option" id="cm-opt-2"><span class="btn-key">2</span></button>
+                            <button class="claude-menu-btn option" id="cm-opt-3"><span class="btn-key">3</span></button>
+                            <button class="claude-menu-btn option" id="cm-opt-4"><span class="btn-key">4</span></button>
+                            <button class="claude-menu-btn option" id="cm-opt-5"><span class="btn-key">5</span></button>
+                        </div>
+                    </div>
+                    <!-- Section: Navigation -->
+                    <div class="claude-menu-section">
+                        <div class="claude-menu-title">History & Navigation</div>
+                        <div class="claude-menu-row">
+                            <button class="claude-menu-btn nav compact" id="cm-up">
+                                <span class="btn-key">↑</span>
+                                <span class="btn-label">Prev</span>
+                            </button>
+                            <button class="claude-menu-btn nav compact" id="cm-down">
+                                <span class="btn-key">↓</span>
+                                <span class="btn-label">Next</span>
+                            </button>
+                            <button class="claude-menu-btn nav compact" id="cm-home">
+                                <span class="btn-key">⇱</span>
+                                <span class="btn-label">Home</span>
+                            </button>
+                            <button class="claude-menu-btn nav compact" id="cm-end">
+                                <span class="btn-key">⇲</span>
+                                <span class="btn-label">End</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Section: Input Controls -->
+                    <div class="claude-menu-section">
+                        <div class="claude-menu-title">Input Controls</div>
+                        <div class="claude-menu-row">
+                            <button class="claude-menu-btn action compact" id="cm-enter">
+                                <span class="btn-key">↵</span>
+                                <span class="btn-label">Enter</span>
+                            </button>
+                            <button class="claude-menu-btn action compact" id="cm-tab">
+                                <span class="btn-key">⇥</span>
+                                <span class="btn-label">Tab</span>
+                            </button>
+                            <button class="claude-menu-btn action compact" id="cm-esc">
+                                <span class="btn-key">Esc</span>
+                                <span class="btn-label">Exit</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Section: Terminal Controls -->
+                    <div class="claude-menu-section">
+                        <div class="claude-menu-title">Terminal</div>
+                        <div class="claude-menu-row">
+                            <button class="claude-menu-btn ctrl compact" id="cm-clear">
+                                <span class="btn-key">^L</span>
+                                <span class="btn-label">Clear</span>
+                            </button>
+                            <button class="claude-menu-btn ctrl compact" id="cm-search">
+                                <span class="btn-key">^R</span>
+                                <span class="btn-label">Search</span>
+                            </button>
+                            <button class="claude-menu-btn ctrl compact" id="cm-verbose">
+                                <span class="btn-key">^O</span>
+                                <span class="btn-label">Verbose</span>
+                            </button>
+                            <button class="claude-menu-btn ctrl compact" id="cm-exit">
+                                <span class="btn-key">^D</span>
+                                <span class="btn-label">Exit</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Section: Mode Switching -->
+                    <div class="claude-menu-section">
+                        <div class="claude-menu-title">Mode Switch</div>
+                        <div class="claude-menu-row">
+                            <button class="claude-menu-btn action compact" id="cm-mode">
+                                <span class="btn-key">⇧Tab</span>
+                                <span class="btn-label">Perms</span>
+                            </button>
+                            <button class="claude-menu-btn action compact" id="cm-model">
+                                <span class="btn-key">Alt+P</span>
+                                <span class="btn-label">Model</span>
+                            </button>
+                            <button class="claude-menu-btn action compact" id="cm-rewind">
+                                <span class="btn-key">Esc×2</span>
+                                <span class="btn-label">Rewind</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4680,6 +4801,96 @@
                         claudeMenu.classList.remove('show');
                     });
                 }
+
+                // Navigation buttons
+                document.getElementById('cm-up')?.addEventListener('click', () => {
+                    sendTerminalKey('ArrowUp', {});
+                    showToast('↑ Previous', 'arrow-up');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-down')?.addEventListener('click', () => {
+                    sendTerminalKey('ArrowDown', {});
+                    showToast('↓ Next', 'arrow-down');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-home')?.addEventListener('click', () => {
+                    sendTerminalKey('Home', {});
+                    showToast('Home', 'chevrons-up');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-end')?.addEventListener('click', () => {
+                    sendTerminalKey('End', {});
+                    showToast('End', 'chevrons-down');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // Input control buttons
+                document.getElementById('cm-enter')?.addEventListener('click', () => {
+                    sendTerminalKey('Enter', {});
+                    showToast('Enter', 'corner-down-left');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-tab')?.addEventListener('click', () => {
+                    sendTerminalKey('Tab', {});
+                    showToast('Tab', 'move-right');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-esc')?.addEventListener('click', () => {
+                    sendTerminalKey('Escape', {});
+                    showToast('Escape', 'x-circle');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // Terminal control buttons
+                document.getElementById('cm-clear')?.addEventListener('click', () => {
+                    sendTerminalKey('l', { ctrl: true });
+                    showToast('Clear (^L)', 'trash-2');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-search')?.addEventListener('click', () => {
+                    sendTerminalKey('r', { ctrl: true });
+                    showToast('Search (^R)', 'search');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-verbose')?.addEventListener('click', () => {
+                    sendTerminalKey('o', { ctrl: true });
+                    showToast('Verbose (^O)', 'message-square');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-exit')?.addEventListener('click', () => {
+                    sendTerminalKey('d', { ctrl: true });
+                    showToast('Exit (^D)', 'log-out');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // Mode switching buttons
+                document.getElementById('cm-mode')?.addEventListener('click', () => {
+                    sendTerminalKey('Tab', { shift: true });
+                    showToast('Toggle Mode', 'toggle-left');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-model')?.addEventListener('click', () => {
+                    sendTerminalKey('p', { alt: true });
+                    showToast('Switch Model', 'cpu');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cm-rewind')?.addEventListener('click', () => {
+                    // Send Escape twice for rewind
+                    sendTerminalKey('Escape', {});
+                    setTimeout(() => sendTerminalKey('Escape', {}), 100);
+                    showToast('Rewind', 'rewind');
+                    claudeMenu.classList.remove('show');
+                });
             }
 
             // Browser controls
