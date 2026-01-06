@@ -635,7 +635,7 @@ async def pc_websocket(websocket: WebSocket):
         pc_connections.pop(host_id, None)
 
         # If this was the active connection, switch to another or None
-        global pc_connection
+        # (pc_connection is already declared global at function start)
         if pc_connection == websocket:
             if pc_connections:
                 # Switch to first available host
