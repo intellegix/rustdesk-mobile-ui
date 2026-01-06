@@ -577,53 +577,77 @@ async def pc_websocket(websocket: WebSocket):
         await websocket.close(code=4001, reason="Invalid token")
         return
 
-    # Get host_id from query params or generate one
-    host_id = websocket.query_params.get("host_id", f"host-{secrets.token_hex(4)}")
+    # Require explicit host_id - no random fallback to prevent ghost connections
+    host_id = websocket.query_params.get("host_id")
+    if not host_id:
+        print("PC connection rejected: missing host_id")
+        await websocket.close(code=4002, reason="host_id required")
+        return
 
-    # Create host connection
-    host = HostConnection(websocket, host_id)
-    pc_connections[host_id] = host
-
-    # Set as active connection if no other hosts connected
-    if pc_connection is None:
-        pc_connection = websocket
-
-    print(f"PC connected: {host_id} from {websocket.client.host}")
-    print(f"Total hosts connected: {len(pc_connections)}")
-
-    # Notify web clients about new host
-    for wc in web_connections:
+    # Deduplication: Close old connection if same host_id reconnects
+    if host_id in pc_connections:
+        old_host = pc_connections[host_id]
+        print(f"Host {host_id} reconnecting - closing old connection")
         try:
-            await wc.send_json({
-                "type": "host_connected",
-                "host": host.to_dict(),
-                "hosts_count": len(pc_connections)
-            })
+            await old_host.ws.close(code=4003, reason="Reconnected from another session")
         except:
             pass
+        pc_connections.pop(host_id, None)
+        # Clear pc_connection if it was the old one
+        if pc_connection == old_host.ws:
+            pc_connection = None
+
+    # Create host connection (but don't announce yet - wait for host_register)
+    host = HostConnection(websocket, host_id)
+    host_registered = False  # Track if host has sent registration
+
+    print(f"PC connected: {host_id} from {websocket.client.host} (awaiting registration)")
 
     try:
         while True:
             data = await websocket.receive_json()
             msg_type = data.get("type", "")
 
-            # Handle host registration message
+            # Handle host registration message - this officially adds the host
             if msg_type == "host_register":
                 host.host_name = data.get("host_name", host_id)
                 host.platform = data.get("platform", "Unknown")
                 host.platform_version = data.get("platform_version", "")
                 host.capabilities = data.get("capabilities", {})
-                print(f"Host registered: {host.host_name} ({host.platform})")
 
-                # Notify web clients about updated host info
-                for wc in web_connections:
-                    try:
-                        await wc.send_json({
-                            "type": "host_updated",
-                            "host": host.to_dict()
-                        })
-                    except:
-                        pass
+                # Now officially register the host
+                if not host_registered:
+                    pc_connections[host_id] = host
+                    host_registered = True
+
+                    # Set as active connection if no other hosts connected
+                    if pc_connection is None:
+                        pc_connection = websocket
+
+                    print(f"Host registered: {host.host_name} ({host.platform})")
+                    print(f"Total hosts connected: {len(pc_connections)}")
+
+                    # Notify web clients about new host (only after registration)
+                    for wc in web_connections:
+                        try:
+                            await wc.send_json({
+                                "type": "host_connected",
+                                "host": host.to_dict(),
+                                "hosts_count": len(pc_connections)
+                            })
+                        except:
+                            pass
+                else:
+                    # Host already registered, just update info
+                    print(f"Host updated: {host.host_name} ({host.platform})")
+                    for wc in web_connections:
+                        try:
+                            await wc.send_json({
+                                "type": "host_updated",
+                                "host": host.to_dict()
+                            })
+                        except:
+                            pass
                 continue
 
             if msg_type == "response":
@@ -673,34 +697,37 @@ async def pc_websocket(websocket: WebSocket):
                         pass
 
     except WebSocketDisconnect:
-        print(f"PC disconnected: {host_id}")
+        print(f"PC disconnected: {host_id} (was registered: {host_registered})")
 
-        # Remove from connections
-        pc_connections.pop(host_id, None)
+        # Only cleanup if host was actually registered
+        if host_registered:
+            # Remove from connections
+            pc_connections.pop(host_id, None)
 
-        # If this was the active connection, switch to another or None
-        # (pc_connection is already declared global at function start)
-        if pc_connection == websocket:
-            if pc_connections:
-                # Switch to first available host
-                first_host = next(iter(pc_connections.values()))
-                pc_connection = first_host.ws
-                print(f"Switched to host: {first_host.host_id}")
-            else:
-                pc_connection = None
+            # If this was the active connection, switch to another or None
+            if pc_connection == websocket:
+                if pc_connections:
+                    # Switch to first available host
+                    first_host = next(iter(pc_connections.values()))
+                    pc_connection = first_host.ws
+                    print(f"Switched to host: {first_host.host_id}")
+                else:
+                    pc_connection = None
 
-        print(f"Remaining hosts: {len(pc_connections)}")
+            print(f"Remaining hosts: {len(pc_connections)}")
 
-        # Notify web clients about disconnected host
-        for wc in web_connections:
-            try:
-                await wc.send_json({
-                    "type": "host_disconnected",
-                    "host_id": host_id,
-                    "hosts_count": len(pc_connections)
-                })
-            except:
-                pass
+            # Notify web clients about disconnected host
+            for wc in web_connections:
+                try:
+                    await wc.send_json({
+                        "type": "host_disconnected",
+                        "host_id": host_id,
+                        "hosts_count": len(pc_connections)
+                    })
+                except:
+                    pass
+        else:
+            print(f"Unregistered connection closed (no cleanup needed)")
 
 
 @app.websocket("/ws")
