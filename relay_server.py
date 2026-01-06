@@ -725,6 +725,15 @@ async def web_websocket(websocket: WebSocket):
                         "text": "PC not connected\n"
                     })
 
+            elif msg_type == "remote_mouse":
+                # Forward mouse operations for text selection
+                print(f"[RELAY] Mouse: {data.get('action')} at ({data.get('x')}, {data.get('y')})")
+                if pc_connection:
+                    try:
+                        await pc_connection.send_json(data)
+                    except Exception as e:
+                        print(f"[RELAY] Failed to forward mouse: {e}")
+
     except WebSocketDisconnect:
         if websocket in web_connections:
             web_connections.remove(websocket)

@@ -1218,6 +1218,44 @@ Always use backslashes for Windows paths."""
                                         except Exception as e:
                                             print(f"[SCROLL] Error: {e}")
 
+                                elif msg_type == "remote_mouse":
+                                    # Mouse operations for text selection (long press to select)
+                                    window_id = data.get("window_id")
+                                    action = data.get("action")  # 'down', 'move', 'up'
+                                    x = data.get("x", 0)
+                                    y = data.get("y", 0)
+                                    print(f"[MOUSE] {action} at ({x}, {y}) on window {window_id}")
+                                    if window_id and HAS_WIN32 and HAS_PYAUTOGUI:
+                                        try:
+                                            hwnd = int(window_id)
+                                            # Get window position
+                                            rect = win32gui.GetWindowRect(hwnd)
+                                            abs_x = rect[0] + x
+                                            abs_y = rect[1] + y
+
+                                            # Focus window first
+                                            if win32gui.IsIconic(hwnd):
+                                                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                                            try:
+                                                win32gui.SetForegroundWindow(hwnd)
+                                            except:
+                                                pass
+                                            await asyncio.sleep(0.02)
+
+                                            # Execute mouse action
+                                            if action == "down":
+                                                pyautogui.moveTo(abs_x, abs_y)
+                                                pyautogui.mouseDown()
+                                                print(f"[MOUSE] Mouse down at ({abs_x}, {abs_y})")
+                                            elif action == "move":
+                                                pyautogui.moveTo(abs_x, abs_y)
+                                            elif action == "up":
+                                                pyautogui.moveTo(abs_x, abs_y)
+                                                pyautogui.mouseUp()
+                                                print(f"[MOUSE] Mouse up at ({abs_x}, {abs_y})")
+                                        except Exception as e:
+                                            print(f"[MOUSE] Error: {e}")
+
                             elif msg.type == aiohttp.WSMsgType.ERROR:
                                 print(f"WebSocket error: {ws.exception()}")
                                 break

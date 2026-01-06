@@ -3432,6 +3432,13 @@
                 this.lastScrollY = 0;
                 this.isRightEdgeScroll = false;  // For fast scrollbar-like scrolling
 
+                // For long-press text selection (like iOS)
+                this.longPressTimer = null;
+                this.isSelecting = false;
+                this.longPressDelay = 500;  // 500ms hold to start selection
+                this.selectionStartX = 0;
+                this.selectionStartY = 0;
+
                 this.setupListeners();
             }
 
@@ -3446,10 +3453,17 @@
             }
 
             handleTouchStart(e) {
+                // Clear any existing long press timer
+                if (this.longPressTimer) {
+                    clearTimeout(this.longPressTimer);
+                    this.longPressTimer = null;
+                }
+
                 if (e.touches.length === 2) {
                     // Pinch start
                     this.lastDistance = this.getDistance(e.touches[0], e.touches[1]);
                     this.isScrolling = false;
+                    this.isSelecting = false;
                     e.preventDefault();
                 } else if (e.touches.length === 1) {
                     const touch = e.touches[0];
@@ -3460,6 +3474,7 @@
                     this.touchStartX = touch.clientX;
                     this.touchStartY = touch.clientY;
                     this.isScrolling = false;
+                    this.isSelecting = false;
                     this.accumulatedScroll = 0;
                     this.lastScrollY = touch.clientY;
 
@@ -3480,12 +3495,53 @@
                         this.lastPanX = touch.clientX;
                         this.lastPanY = touch.clientY;
                     }
+
+                    // Start long press timer for text selection
+                    if (this.scale <= 1 && this.streamController) {
+                        this.longPressTimer = setTimeout(() => {
+                            this.startSelection(touch);
+                        }, this.longPressDelay);
+                    }
                 }
+            }
+
+            startSelection(touch) {
+                // Calculate position relative to canvas/window
+                const rect = this.canvas.getBoundingClientRect();
+                const canvasX = touch.clientX - rect.left;
+                const canvasY = touch.clientY - rect.top;
+
+                // Scale to actual window coordinates
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                const x = Math.round(canvasX * scaleX);
+                const y = Math.round(canvasY * scaleY);
+
+                this.isSelecting = true;
+                this.selectionStartX = x;
+                this.selectionStartY = y;
+
+                // Vibrate for feedback (if supported)
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+
+                // Show visual feedback
+                showToast('Selecting...', 'type');
+
+                // Send mouse down to start selection
+                this.streamController.sendRemoteMouse('down', x, y);
             }
 
             handleTouchMove(e) {
                 if (e.touches.length === 2) {
-                    // Pinch zoom
+                    // Pinch zoom - cancel long press and selection
+                    if (this.longPressTimer) {
+                        clearTimeout(this.longPressTimer);
+                        this.longPressTimer = null;
+                    }
+                    this.isSelecting = false;
+
                     e.preventDefault();
                     const distance = this.getDistance(e.touches[0], e.touches[1]);
                     const delta = distance / this.lastDistance;
@@ -3497,6 +3553,31 @@
                     this.showZoomIndicator();
                 } else if (e.touches.length === 1) {
                     const touch = e.touches[0];
+                    const moveDistance = Math.abs(touch.clientX - this.touchStartX) + Math.abs(touch.clientY - this.touchStartY);
+
+                    // Cancel long press timer if moved too much before it triggers
+                    if (this.longPressTimer && moveDistance > 10) {
+                        clearTimeout(this.longPressTimer);
+                        this.longPressTimer = null;
+                    }
+
+                    // If in selection mode, drag to select
+                    if (this.isSelecting && this.streamController) {
+                        e.preventDefault();
+
+                        const rect = this.canvas.getBoundingClientRect();
+                        const canvasX = touch.clientX - rect.left;
+                        const canvasY = touch.clientY - rect.top;
+
+                        const scaleX = this.canvas.width / rect.width;
+                        const scaleY = this.canvas.height / rect.height;
+                        const x = Math.round(canvasX * scaleX);
+                        const y = Math.round(canvasY * scaleY);
+
+                        // Send mouse move to extend selection
+                        this.streamController.sendRemoteMouse('move', x, y);
+                        return;
+                    }
 
                     if (this.isPanning && this.scale > 1) {
                         // Pan when zoomed
@@ -3510,8 +3591,8 @@
                         this.translateY += deltaY;
                         this.constrainPan();
                         this.applyTransform();
-                    } else if (this.scale <= 1 && this.streamController) {
-                        // Scroll for any window when not zoomed
+                    } else if (this.scale <= 1 && this.streamController && !this.isSelecting) {
+                        // Scroll for any window when not zoomed (and not selecting)
                         const deltaY = this.lastScrollY - touch.clientY;
                         const totalDeltaY = Math.abs(touch.clientY - this.touchStartY);
 
@@ -3537,10 +3618,37 @@
             }
 
             handleTouchEnd(e) {
+                // Clear long press timer
+                if (this.longPressTimer) {
+                    clearTimeout(this.longPressTimer);
+                    this.longPressTimer = null;
+                }
+
                 const touchDuration = Date.now() - this.touchStartTime;
                 const touch = e.changedTouches[0];
                 const deltaX = Math.abs(touch.clientX - this.touchStartX);
                 const deltaY = Math.abs(touch.clientY - this.touchStartY);
+
+                // End selection if we were selecting
+                if (this.isSelecting && this.streamController) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const canvasX = touch.clientX - rect.left;
+                    const canvasY = touch.clientY - rect.top;
+
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    const x = Math.round(canvasX * scaleX);
+                    const y = Math.round(canvasY * scaleY);
+
+                    // Send mouse up to finish selection
+                    this.streamController.sendRemoteMouse('up', x, y);
+                    showToast('Selected', 'check');
+
+                    this.isSelecting = false;
+                    this.isPanning = false;
+                    this.isScrolling = false;
+                    return;
+                }
 
                 // Send any remaining scroll with appropriate multiplier
                 if (this.isScrolling && Math.abs(this.accumulatedScroll) > 0 && this.streamController) {
@@ -4040,6 +4148,19 @@
                     ws.send(JSON.stringify({
                         type: 'remote_click',
                         window_id: this.currentWindowId,
+                        x: Math.round(x),
+                        y: Math.round(y)
+                    }));
+                }
+            }
+
+            // Remote mouse operations for text selection (long press to select)
+            sendRemoteMouse(action, x, y) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'remote_mouse',
+                        window_id: this.currentWindowId,
+                        action: action,  // 'down', 'move', 'up'
                         x: Math.round(x),
                         y: Math.round(y)
                     }));
