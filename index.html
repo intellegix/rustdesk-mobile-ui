@@ -3257,12 +3257,10 @@
                     <!-- Panel: Multiline -->
                     <div class="claude-menu-panel" id="panel-multi">
                         <div class="claude-menu-section">
-                            <div class="claude-menu-title">Multiline Input</div>
+                            <div class="claude-menu-title">Session Help</div>
                             <div class="claude-menu-row">
-                                <button class="claude-multi-btn" id="multi-backslash"><span class="multi-key">\↵</span><span class="multi-label">Escape</span></button>
-                                <button class="claude-multi-btn" id="multi-option"><span class="multi-key">⌥↵</span><span class="multi-label">Option</span></button>
-                                <button class="claude-multi-btn" id="multi-shift"><span class="multi-key">⇧↵</span><span class="multi-label">Shift</span></button>
-                                <button class="claude-multi-btn" id="multi-ctrlj"><span class="multi-key">^J</span><span class="multi-label">LineFeed</span></button>
+                                <button class="claude-multi-btn" id="cmd-help-shortcuts"><span class="multi-key">?</span><span class="multi-label">Shortcuts</span></button>
+                                <button class="claude-multi-btn" id="cmd-help-full"><span class="multi-key">/help</span><span class="multi-label">Full Help</span></button>
                             </div>
                         </div>
                         <div class="claude-menu-section">
@@ -3272,6 +3270,28 @@
                                 <button class="claude-multi-btn" id="prefix-bang"><span class="multi-key">!</span><span class="multi-label">Bash</span></button>
                                 <button class="claude-multi-btn" id="prefix-at"><span class="multi-key">@</span><span class="multi-label">File Ref</span></button>
                                 <button class="claude-multi-btn" id="prefix-hash"><span class="multi-key">#</span><span class="multi-label">Memory</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Quick Bash (!)</div>
+                            <div class="claude-cmds-grid">
+                                <button class="claude-cmd-btn" data-bash="git status"><span class="cmd-name">!git status</span></button>
+                                <button class="claude-cmd-btn" data-bash="git diff"><span class="cmd-name">!git diff</span></button>
+                                <button class="claude-cmd-btn" data-bash="git log --oneline -5"><span class="cmd-name">!git log</span></button>
+                                <button class="claude-cmd-btn" data-bash="npm test"><span class="cmd-name">!npm test</span></button>
+                                <button class="claude-cmd-btn" data-bash="npm run build"><span class="cmd-name">!npm build</span></button>
+                                <button class="claude-cmd-btn" data-bash="ls -la"><span class="cmd-name">!ls -la</span></button>
+                                <button class="claude-cmd-btn" data-bash="pwd"><span class="cmd-name">!pwd</span></button>
+                                <button class="claude-cmd-btn" data-bash="cat package.json"><span class="cmd-name">!cat pkg</span></button>
+                            </div>
+                        </div>
+                        <div class="claude-menu-section">
+                            <div class="claude-menu-title">Multiline Input</div>
+                            <div class="claude-menu-row">
+                                <button class="claude-multi-btn" id="multi-backslash"><span class="multi-key">\↵</span><span class="multi-label">Escape</span></button>
+                                <button class="claude-multi-btn" id="multi-option"><span class="multi-key">⌥↵</span><span class="multi-label">Option</span></button>
+                                <button class="claude-multi-btn" id="multi-shift"><span class="multi-key">⇧↵</span><span class="multi-label">Shift</span></button>
+                                <button class="claude-multi-btn" id="multi-ctrlj"><span class="multi-key">^J</span><span class="multi-label">LineFeed</span></button>
                             </div>
                         </div>
                     </div>
@@ -5272,6 +5292,29 @@
                     sendTerminalCommand('#');
                     showToast('# (Memory)', 'hash');
                     claudeMenu.classList.remove('show');
+                });
+
+                // Session help handlers
+                document.getElementById('cmd-help-shortcuts')?.addEventListener('click', () => {
+                    sendTerminalCommand('?');
+                    showToast('? (Shortcuts)', 'help-circle');
+                    claudeMenu.classList.remove('show');
+                });
+
+                document.getElementById('cmd-help-full')?.addEventListener('click', () => {
+                    sendTerminalCommand('/help');
+                    showToast('/help', 'book-open');
+                    claudeMenu.classList.remove('show');
+                });
+
+                // Quick bash command handlers
+                document.querySelectorAll('.claude-cmd-btn[data-bash]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const cmd = btn.dataset.bash;
+                        sendTerminalCommand('!' + cmd);
+                        showToast('!' + cmd.split(' ')[0], 'terminal-square');
+                        claudeMenu.classList.remove('show');
+                    });
                 });
             }
 
