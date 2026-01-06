@@ -1631,23 +1631,22 @@
             color: white;
         }
 
-        /* Scroll Wheel - positioned in footer */
+        /* Scroll Wheel - vertical, positioned in footer */
         .scroll-wheel {
-            flex: 1;
+            width: 32px;
             height: 48px;
-            background: linear-gradient(180deg, #1a1a2e 0%, #0d1117 50%, #1a1a2e 100%);
-            border-radius: 10px;
+            background: linear-gradient(90deg, #1a1a2e 0%, #0d1117 50%, #1a1a2e 100%);
+            border-radius: 8px;
             border: 2px solid var(--accent-cyan);
             position: relative;
             overflow: hidden;
-            cursor: grab;
+            cursor: ns-resize;
             touch-action: none;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
-            align-self: center;
+            box-shadow: inset 2px 0 6px rgba(0,0,0,0.5);
+            flex-shrink: 0;
         }
 
         .scroll-wheel:active {
-            cursor: grabbing;
             border-color: var(--accent-orange);
         }
 
@@ -1658,51 +1657,29 @@
             right: 0;
             bottom: 0;
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             justify-content: space-around;
             align-items: center;
-            padding: 0 12px;
-            transition: transform 0.1s ease-out;
+            padding: 5px 0;
         }
 
         .scroll-wheel-notch {
-            width: 3px;
-            height: 16px;
-            background: rgba(0, 212, 255, 0.4);
-            border-radius: 2px;
+            width: 16px;
+            height: 2px;
+            background: rgba(0, 212, 255, 0.5);
+            border-radius: 1px;
         }
 
         .scroll-wheel.scrolling-up .scroll-wheel-notch {
-            background: rgba(34, 197, 94, 0.8);
+            background: rgba(34, 197, 94, 0.9);
         }
 
         .scroll-wheel.scrolling-down .scroll-wheel-notch {
-            background: rgba(239, 68, 68, 0.8);
+            background: rgba(239, 68, 68, 0.9);
         }
 
         .scroll-wheel-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--accent-cyan);
-            pointer-events: none;
-            opacity: 0.5;
-        }
-
-        .scroll-wheel-indicator svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .scroll-wheel.scrolling-up .scroll-wheel-indicator {
-            color: #22C55E;
-            opacity: 0.9;
-        }
-
-        .scroll-wheel.scrolling-down .scroll-wheel-indicator {
-            color: #EF4444;
-            opacity: 0.9;
+            display: none;
         }
 
         /* Recent Directories Dialog */
@@ -3491,13 +3468,6 @@
                     <div class="scroll-wheel-notch"></div>
                     <div class="scroll-wheel-notch"></div>
                     <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                </div>
-                <div class="scroll-wheel-indicator" id="scroll-indicator">
-                    <i data-lucide="chevrons-up-down"></i>
                 </div>
             </div>
         </footer>
@@ -5930,6 +5900,7 @@
                 lastY = startY;
                 scrollAccumulator = 0;
                 scrollWheel.style.cursor = 'grabbing';
+                console.log('[SCROLL] Drag started');
             }
 
             function doDrag(e) {
@@ -5959,16 +5930,15 @@
                     scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
                     scrollWheel.classList.add(direction === 'up' ? 'scrolling-up' : 'scrolling-down');
 
-                    // Send scroll commands
+                    // Send scroll commands (Shift+PageUp/PageDown for terminal scrollback)
                     for (let i = 0; i < scrollCount; i++) {
                         if (direction === 'up') {
-                            // Page Up or Shift+Up for scrolling up
-                            sendTerminalKey('PageUp', {});
+                            sendTerminalKey('PageUp', { shift: true });
                         } else {
-                            // Page Down or Shift+Down for scrolling down
-                            sendTerminalKey('PageDown', {});
+                            sendTerminalKey('PageDown', { shift: true });
                         }
                     }
+                    console.log('[SCROLL]', direction, 'x', scrollCount);
 
                     // Reset accumulator but keep remainder
                     scrollAccumulator = scrollAccumulator % scrollThreshold;
@@ -5981,14 +5951,16 @@
             }
 
             function endDrag() {
+                if (!isDragging) return;
                 isDragging = false;
-                scrollWheel.style.cursor = 'grab';
+                scrollWheel.style.cursor = 'ns-resize';
                 scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
 
                 const inner = scrollWheel.querySelector('.scroll-wheel-inner');
                 if (inner) {
                     inner.style.transform = '';
                 }
+                console.log('[SCROLL] Drag ended');
             }
 
             // Touch events
