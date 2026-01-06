@@ -2740,9 +2740,106 @@
         .double-tap-hint.show {
             opacity: 1;
         }
+
+        /* Debug Panel */
+        .debug-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: #EF4444;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 10000;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .debug-toggle.has-logs {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .debug-panel {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 10px;
+            right: 10px;
+            bottom: 100px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #EF4444;
+            border-radius: 12px;
+            z-index: 9999;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .debug-panel.show {
+            display: flex;
+        }
+        .debug-header {
+            padding: 10px;
+            background: #EF4444;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .debug-clear {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .debug-logs {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .debug-log {
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+            word-break: break-all;
+        }
+        .debug-log.scroll {
+            color: #22C55E;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .debug-log.error {
+            color: #EF4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .debug-log.warn {
+            color: #F59E0B;
+        }
+        .debug-log-time {
+            color: #666;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
+    <!-- Debug Panel -->
+    <button class="debug-toggle" id="debug-toggle">🐛</button>
+    <div class="debug-panel" id="debug-panel">
+        <div class="debug-header">
+            <span>Debug Console</span>
+            <button class="debug-clear" id="debug-clear">Clear</button>
+        </div>
+        <div class="debug-logs" id="debug-logs"></div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="header">
@@ -3505,6 +3602,81 @@
     </div>
 
     <script>
+        // ========== DEBUG PANEL CONSOLE CAPTURE ==========
+        (function() {
+            const debugLogs = [];
+            const originalLog = console.log;
+            const originalError = console.error;
+            const originalWarn = console.warn;
+
+            function addDebugLog(type, args) {
+                const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+                const message = Array.from(args).map(a =>
+                    typeof a === 'object' ? JSON.stringify(a) : String(a)
+                ).join(' ');
+
+                debugLogs.push({ type, time, message });
+
+                // Update UI if panel exists
+                const logsContainer = document.getElementById('debug-logs');
+                if (logsContainer) {
+                    const div = document.createElement('div');
+                    let className = 'debug-log';
+                    if (message.includes('[SCROLL]')) className += ' scroll';
+                    if (type === 'error') className += ' error';
+                    if (type === 'warn') className += ' warn';
+                    div.className = className;
+                    div.innerHTML = `<span class="debug-log-time">${time}</span>${message}`;
+                    logsContainer.appendChild(div);
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+
+                    // Pulse the toggle button
+                    const toggle = document.getElementById('debug-toggle');
+                    if (toggle && !document.getElementById('debug-panel').classList.contains('show')) {
+                        toggle.classList.add('has-logs');
+                    }
+                }
+            }
+
+            console.log = function(...args) {
+                originalLog.apply(console, args);
+                addDebugLog('log', args);
+            };
+            console.error = function(...args) {
+                originalError.apply(console, args);
+                addDebugLog('error', args);
+            };
+            console.warn = function(...args) {
+                originalWarn.apply(console, args);
+                addDebugLog('warn', args);
+            };
+
+            // Setup toggle button when DOM ready
+            document.addEventListener('DOMContentLoaded', function() {
+                const toggle = document.getElementById('debug-toggle');
+                const panel = document.getElementById('debug-panel');
+                const clearBtn = document.getElementById('debug-clear');
+                const logsContainer = document.getElementById('debug-logs');
+
+                if (toggle && panel) {
+                    toggle.addEventListener('click', function() {
+                        panel.classList.toggle('show');
+                        toggle.classList.remove('has-logs');
+                    });
+                }
+
+                if (clearBtn && logsContainer) {
+                    clearBtn.addEventListener('click', function() {
+                        logsContainer.innerHTML = '';
+                        debugLogs.length = 0;
+                    });
+                }
+
+                console.log('[DEBUG] Debug panel initialized');
+            });
+        })();
+        // ========== END DEBUG PANEL ==========
+
         // Configuration
         const API_BASE = window.location.origin;
         let ws = null;
