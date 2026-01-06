@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
-    <title>Desktop Remote</title>
+    <title>Intellegix Desktop Remote</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -1096,6 +1096,20 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Intellegix Watermark */
+        .intellegix-watermark {
+            position: fixed;
+            bottom: 8px;
+            right: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+            opacity: 0.4;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
         /* Toast Notifications */
         .toast {
             position: fixed;
@@ -1588,6 +1602,33 @@
         .tab-btn.tab-new svg {
             width: 20px;
             height: 20px;
+        }
+
+        /* Claude Options Quick Row */
+        .claude-options-row {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+        }
+
+        .claude-options-row .option-btn {
+            flex: 1;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 2px solid var(--accent-purple);
+            color: var(--accent-purple);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .claude-options-row .option-btn:active {
+            transform: scale(0.92);
+            background: var(--accent-purple);
+            color: white;
         }
 
         /* Recent Directories Dialog */
@@ -2888,6 +2929,9 @@
         </div>
     </div>
 
+    <!-- Intellegix Watermark -->
+    <div class="intellegix-watermark">Intellegix</div>
+
     <!-- Toast Notification -->
     <div class="toast" id="toast">
         <i id="toast-icon" data-lucide="check-circle"></i>
@@ -3021,6 +3065,15 @@
                 <div class="recent-dirs-list" id="recent-dirs-list">
                     <!-- Populated dynamically -->
                 </div>
+            </div>
+
+            <!-- Claude Options Quick Row -->
+            <div class="claude-options-row">
+                <button class="option-btn" data-option="1">1</button>
+                <button class="option-btn" data-option="2">2</button>
+                <button class="option-btn" data-option="3">3</button>
+                <button class="option-btn" data-option="4">4</button>
+                <button class="option-btn" data-option="5">5</button>
             </div>
 
             <div class="terminal-input-row">
@@ -5566,6 +5619,18 @@
                     console.log('[TERM] Tab button clicked:', tabNum);
                     sendTerminalKey(tabNum, { ctrl: true, alt: true });
                     showToast('Tab ' + tabNum, 'layout-grid');
+                });
+            });
+
+            // Claude Options quick buttons (1-5) - send just the number for Claude Code option selection
+            const optionBtns = document.querySelectorAll('.option-btn');
+            console.log('[SETUP] Found', optionBtns.length, 'option buttons');
+            optionBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const optNum = btn.dataset.option;
+                    console.log('[TERM] Option button clicked:', optNum);
+                    sendTerminalCommand(optNum);
+                    showToast('Option ' + optNum, 'hash');
                 });
             });
 
