@@ -246,8 +246,42 @@ async def relay_status():
 @app.get("/api/hosts")
 async def list_hosts():
     """List all connected host PCs."""
+    # Only return hosts with capabilities (real connections)
+    real_hosts = [
+        host.to_dict() for host in pc_connections.values()
+        if host.capabilities  # Only hosts that sent capabilities
+    ]
+    return {"hosts": real_hosts}
+
+
+@app.post("/api/hosts/cleanup")
+async def cleanup_hosts():
+    """Remove all stale/zombie host connections."""
+    global pc_connection, pc_connections
+
+    # Find hosts without capabilities (zombie connections)
+    zombie_ids = [
+        host_id for host_id, host in pc_connections.items()
+        if not host.capabilities
+    ]
+
+    # Remove zombies
+    for host_id in zombie_ids:
+        pc_connections.pop(host_id, None)
+
+    # Reset pc_connection to a valid host if needed
+    if pc_connections:
+        # Select the first host with capabilities
+        for host in pc_connections.values():
+            if host.capabilities:
+                pc_connection = host.ws
+                break
+    else:
+        pc_connection = None
+
     return {
-        "hosts": [host.to_dict() for host in pc_connections.values()]
+        "removed": len(zombie_ids),
+        "remaining": len(pc_connections)
     }
 
 
