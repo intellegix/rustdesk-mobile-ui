@@ -114,6 +114,118 @@
             50% { opacity: 0.5; }
         }
 
+        /* Host Selector Modal */
+        .host-selector-modal {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            min-width: 280px;
+            max-width: 320px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .host-selector-modal.show {
+            display: block;
+        }
+
+        .host-selector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .host-selector-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .host-selector-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .host-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .host-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .host-item:last-child {
+            border-bottom: none;
+        }
+
+        .host-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .host-item.selected {
+            background: rgba(249, 115, 22, 0.1);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .host-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .host-icon svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-secondary);
+        }
+
+        .host-info {
+            flex: 1;
+        }
+
+        .host-name {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .host-platform {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .no-hosts-message {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .header {
+            position: relative;
+        }
+
         /* Navigation Tabs */
         .nav-tabs {
             display: flex;
@@ -2113,9 +2225,23 @@
                 <h1 class="header-title">Desktop</h1>
                 <span class="header-subtitle" id="hostname">Loading...</span>
             </div>
-            <div class="connection-status">
+            <div class="connection-status" id="connection-status" style="cursor: pointer;">
                 <div class="status-dot" id="status-dot"></div>
                 <span id="connection-text">Connected</span>
+                <i data-lucide="chevron-down" style="width: 14px; height: 14px; margin-left: 4px;"></i>
+            </div>
+
+            <!-- Host Selector Modal -->
+            <div class="host-selector-modal" id="host-selector-modal">
+                <div class="host-selector-header">
+                    <h3>Select Host</h3>
+                    <button class="host-selector-close" id="host-selector-close">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="host-list" id="host-list">
+                    <!-- Hosts will be populated here -->
+                </div>
             </div>
         </header>
 
@@ -3161,12 +3287,62 @@
             };
         }
 
+        // Host tracking for multi-host support
+        let connectedHosts = [];
+        let selectedHostId = null;
+
         function handleWebSocketMessage(data) {
             switch (data.type) {
                 case 'pc_status':
-                    // Relay mode: PC connection status
+                    // Relay mode: PC connection status with hosts list
                     pcConnected = data.connected;
+                    if (data.hosts) {
+                        connectedHosts = data.hosts;
+                        // Auto-select first host if none selected
+                        if (!selectedHostId && connectedHosts.length > 0) {
+                            selectHost(connectedHosts[0].host_id);
+                        }
+                    }
                     updateConnectionStatus();
+                    break;
+                case 'host_connected':
+                    // New host connected
+                    if (data.host && !connectedHosts.find(h => h.host_id === data.host.host_id)) {
+                        connectedHosts.push(data.host);
+                        showToast(`${data.host.host_name} connected`, 'monitor');
+                    }
+                    // Auto-select if first host
+                    if (!selectedHostId && connectedHosts.length > 0) {
+                        selectHost(connectedHosts[0].host_id);
+                    }
+                    updateConnectionStatus();
+                    break;
+                case 'host_disconnected':
+                    // Host disconnected
+                    const disconnectedHost = connectedHosts.find(h => h.host_id === data.host_id);
+                    if (disconnectedHost) {
+                        showToast(`${disconnectedHost.host_name} disconnected`, 'monitor-off');
+                    }
+                    connectedHosts = connectedHosts.filter(h => h.host_id !== data.host_id);
+                    // If selected host disconnected, switch to another
+                    if (selectedHostId === data.host_id) {
+                        selectedHostId = null;
+                        if (connectedHosts.length > 0) {
+                            selectHost(connectedHosts[0].host_id);
+                        }
+                    }
+                    pcConnected = connectedHosts.length > 0;
+                    updateConnectionStatus();
+                    break;
+                case 'host_updated':
+                    // Host info updated
+                    if (data.host) {
+                        const idx = connectedHosts.findIndex(h => h.host_id === data.host.host_id);
+                        if (idx >= 0) {
+                            connectedHosts[idx] = data.host;
+                        }
+                        updateConnectionStatus();
+                    }
                     break;
                 case 'windows':
                     // Real-time window updates
@@ -3194,16 +3370,38 @@
             }
         }
 
+        async function selectHost(hostId) {
+            try {
+                const response = await api('/api/hosts/select', 'POST', { host_id: hostId });
+                if (response.status === 'selected') {
+                    selectedHostId = hostId;
+                    const host = connectedHosts.find(h => h.host_id === hostId);
+                    showToast(`Switched to ${host?.host_name || hostId}`, 'monitor');
+                    updateConnectionStatus();
+                }
+            } catch (error) {
+                console.error('Failed to select host:', error);
+            }
+        }
+
         function updateConnectionStatus() {
             const statusDot = document.getElementById('status-dot');
             const connectionText = document.getElementById('connection-text');
 
-            if (pcConnected) {
+            if (pcConnected && connectedHosts.length > 0) {
                 statusDot.classList.remove('offline');
-                connectionText.textContent = 'PC Connected';
+                // Show selected host name or count of hosts
+                const selectedHost = connectedHosts.find(h => h.host_id === selectedHostId);
+                if (selectedHost) {
+                    connectionText.textContent = selectedHost.host_name;
+                } else if (connectedHosts.length === 1) {
+                    connectionText.textContent = connectedHosts[0].host_name;
+                } else {
+                    connectionText.textContent = `${connectedHosts.length} Hosts`;
+                }
             } else {
                 statusDot.classList.add('offline');
-                connectionText.textContent = 'PC Offline';
+                connectionText.textContent = 'No Hosts';
             }
         }
 
@@ -4511,6 +4709,76 @@
             });
         }
 
+        // ========== HOST SELECTOR ==========
+        function setupHostSelector() {
+            const connectionStatus = document.getElementById('connection-status');
+            const hostModal = document.getElementById('host-selector-modal');
+            const hostClose = document.getElementById('host-selector-close');
+            const hostList = document.getElementById('host-list');
+
+            // Toggle modal on click
+            connectionStatus.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hostModal.classList.toggle('show');
+                if (hostModal.classList.contains('show')) {
+                    renderHostList();
+                }
+            });
+
+            // Close modal
+            hostClose.addEventListener('click', () => {
+                hostModal.classList.remove('show');
+            });
+
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+                if (!hostModal.contains(e.target) && !connectionStatus.contains(e.target)) {
+                    hostModal.classList.remove('show');
+                }
+            });
+        }
+
+        function renderHostList() {
+            const hostList = document.getElementById('host-list');
+
+            if (connectedHosts.length === 0) {
+                hostList.innerHTML = `
+                    <div class="no-hosts-message">
+                        <i data-lucide="monitor-off" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+                        <p>No hosts connected</p>
+                        <p style="font-size: 11px; margin-top: 8px;">Run the relay client on your PC to connect</p>
+                    </div>
+                `;
+                lucide.createIcons({ nodes: [hostList] });
+                return;
+            }
+
+            hostList.innerHTML = connectedHosts.map(host => `
+                <div class="host-item ${host.host_id === selectedHostId ? 'selected' : ''}"
+                     data-host-id="${host.host_id}">
+                    <div class="host-icon">
+                        <i data-lucide="${host.platform === 'Windows' ? 'monitor' : host.platform === 'Darwin' ? 'laptop' : 'server'}"></i>
+                    </div>
+                    <div class="host-info">
+                        <div class="host-name">${host.host_name}</div>
+                        <div class="host-platform">${host.platform} ${host.platform_version}</div>
+                    </div>
+                    ${host.host_id === selectedHostId ? '<i data-lucide="check" style="color: var(--accent-color);"></i>' : ''}
+                </div>
+            `).join('');
+
+            lucide.createIcons({ nodes: [hostList] });
+
+            // Add click handlers
+            hostList.querySelectorAll('.host-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const hostId = item.dataset.hostId;
+                    selectHost(hostId);
+                    document.getElementById('host-selector-modal').classList.remove('show');
+                });
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             setupNavigation();
@@ -4520,6 +4788,7 @@
             setupTerminalKeyboard();
             setupRecentDirectoriesDialog();
             setupFolders();
+            setupHostSelector();
             initIcons();
 
             await loadApps();
