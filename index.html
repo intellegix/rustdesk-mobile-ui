@@ -1552,10 +1552,10 @@
         .terminal-keyboard {
             display: none;
             flex-direction: column;
-            padding: 12px 16px;
+            padding: 6px 10px;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
-            gap: 10px;
+            gap: 5px;
             flex-shrink: 0;
         }
 
@@ -1571,12 +1571,12 @@
 
         .tab-btn {
             flex: 1;
-            height: 44px;
-            border-radius: 8px;
+            height: 34px;
+            border-radius: 6px;
             background: var(--bg-elevated);
             border: 2px solid var(--accent-orange);
             color: var(--accent-orange);
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             font-family: 'JetBrains Mono', monospace;
@@ -1607,19 +1607,19 @@
         /* Claude Options Quick Row */
         .claude-options-row {
             display: flex;
-            gap: 8px;
-            padding: 8px 12px;
+            gap: 6px;
+            padding: 4px 8px;
             background: var(--bg-tertiary);
         }
 
         .claude-options-row .option-btn {
             flex: 1;
-            height: 40px;
-            border-radius: 8px;
+            height: 32px;
+            border-radius: 6px;
             background: rgba(139, 92, 246, 0.15);
             border: 2px solid var(--accent-purple);
             color: var(--accent-purple);
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             font-family: 'JetBrains Mono', monospace;
@@ -1629,6 +1629,80 @@
             transform: scale(0.92);
             background: var(--accent-purple);
             color: white;
+        }
+
+        /* Scroll Wheel - positioned in footer */
+        .scroll-wheel {
+            flex: 1;
+            height: 48px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #0d1117 50%, #1a1a2e 100%);
+            border-radius: 10px;
+            border: 2px solid var(--accent-cyan);
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            align-self: center;
+        }
+
+        .scroll-wheel:active {
+            cursor: grabbing;
+            border-color: var(--accent-orange);
+        }
+
+        .scroll-wheel-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 12px;
+            transition: transform 0.1s ease-out;
+        }
+
+        .scroll-wheel-notch {
+            width: 3px;
+            height: 16px;
+            background: rgba(0, 212, 255, 0.4);
+            border-radius: 2px;
+        }
+
+        .scroll-wheel.scrolling-up .scroll-wheel-notch {
+            background: rgba(34, 197, 94, 0.8);
+        }
+
+        .scroll-wheel.scrolling-down .scroll-wheel-notch {
+            background: rgba(239, 68, 68, 0.8);
+        }
+
+        .scroll-wheel-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--accent-cyan);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .scroll-wheel-indicator svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .scroll-wheel.scrolling-up .scroll-wheel-indicator {
+            color: #22C55E;
+            opacity: 0.9;
+        }
+
+        .scroll-wheel.scrolling-down .scroll-wheel-indicator {
+            color: #EF4444;
+            opacity: 0.9;
         }
 
         /* Recent Directories Dialog */
@@ -1762,11 +1836,11 @@
         .claude-actions-section {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 3px;
         }
 
         .claude-section-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
@@ -1776,17 +1850,17 @@
 
         .terminal-input-row {
             display: flex;
-            gap: 10px;
+            gap: 6px;
         }
 
         .term-input {
             flex: 1;
-            padding: 14px 16px;
+            padding: 10px 12px;
             background: #0d1117;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             color: #58a6ff;
-            font-size: 15px;
+            font-size: 14px;
             font-family: 'JetBrains Mono', monospace;
             outline: none;
         }
@@ -1800,10 +1874,10 @@
         }
 
         .term-send {
-            width: 50px;
+            width: 40px;
             background: var(--accent-orange);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             color: white;
             cursor: pointer;
             display: flex;
@@ -1816,16 +1890,16 @@
         }
 
         .term-send svg {
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
         }
 
         .term-clear-local,
         .term-clear-remote {
-            width: 44px;
+            width: 36px;
             background: var(--bg-elevated);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
@@ -1854,10 +1928,10 @@
         }
 
         .term-upload {
-            width: 44px;
+            width: 36px;
             background: rgba(34, 197, 94, 0.15);
             border: 1px solid #22C55E;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #22C55E;
             cursor: pointer;
             display: flex;
@@ -1873,15 +1947,15 @@
         }
 
         .term-upload svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
 
         .term-voice {
-            width: 44px;
+            width: 36px;
             background: rgba(59, 130, 246, 0.15);
             border: 1px solid #3B82F6;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #3B82F6;
             cursor: pointer;
             display: flex;
@@ -1914,25 +1988,26 @@
         /* Stream Footer */
         .stream-footer {
             display: flex;
-            padding: 16px;
-            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            gap: 8px;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
             flex-shrink: 0;
-            padding-bottom: calc(16px + var(--safe-area-bottom));
+            padding-bottom: calc(10px + var(--safe-area-bottom));
         }
 
         .stream-action {
-            flex: 1;
-            padding: 14px;
-            border-radius: 12px;
+            flex: 0 0 auto;
+            padding: 10px 16px;
+            border-radius: 10px;
             background: var(--bg-elevated);
             border: none;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
             cursor: pointer;
         }
 
@@ -1942,13 +2017,13 @@
         }
 
         .stream-action svg {
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             color: var(--text-primary);
         }
 
         .stream-action-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-secondary);
             font-weight: 500;
         }
@@ -1964,7 +2039,7 @@
         /* Three-dot popup menu */
         .stream-menu-container {
             position: relative;
-            flex: 1;
+            flex: 0 0 auto;
         }
 
         .stream-menu {
@@ -2040,7 +2115,7 @@
         /* Claude Actions Menu */
         .claude-menu-container {
             position: relative;
-            flex: 1;
+            flex: 0 0 auto;
         }
 
         .claude-menu {
@@ -3405,6 +3480,24 @@
                         <i data-lucide="x"></i>
                         <span>Close Window</span>
                     </button>
+                </div>
+            </div>
+            <!-- Scroll Wheel -->
+            <div class="scroll-wheel" id="scroll-wheel" title="Drag up/down to scroll">
+                <div class="scroll-wheel-inner">
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                    <div class="scroll-wheel-notch"></div>
+                </div>
+                <div class="scroll-wheel-indicator" id="scroll-indicator">
+                    <i data-lucide="chevrons-up-down"></i>
                 </div>
             </div>
         </footer>
@@ -5814,6 +5907,102 @@
             }
 
             console.log('[SETUP] Terminal keyboard setup complete');
+
+            // Setup scroll wheel
+            setupScrollWheel();
+        }
+
+        function setupScrollWheel() {
+            const scrollWheel = document.getElementById('scroll-wheel');
+            if (!scrollWheel) return;
+
+            let isDragging = false;
+            let startY = 0;
+            let lastY = 0;
+            let scrollAccumulator = 0;
+            const scrollThreshold = 15; // pixels to trigger one scroll
+            let scrollInterval = null;
+            let currentDirection = null;
+
+            function startDrag(e) {
+                isDragging = true;
+                startY = e.touches ? e.touches[0].clientY : e.clientY;
+                lastY = startY;
+                scrollAccumulator = 0;
+                scrollWheel.style.cursor = 'grabbing';
+            }
+
+            function doDrag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                const currentY = e.touches ? e.touches[0].clientY : e.clientY;
+                const deltaY = lastY - currentY; // Positive = dragging up = scroll up
+                lastY = currentY;
+
+                scrollAccumulator += deltaY;
+
+                // Update visual feedback
+                const inner = scrollWheel.querySelector('.scroll-wheel-inner');
+                if (inner) {
+                    // Rotate the notches based on scroll direction
+                    const rotation = (scrollAccumulator % 360) * 0.5;
+                    inner.style.transform = `translateY(${-deltaY * 0.3}px)`;
+                }
+
+                // Check if we've accumulated enough to trigger a scroll
+                if (Math.abs(scrollAccumulator) >= scrollThreshold) {
+                    const direction = scrollAccumulator > 0 ? 'up' : 'down';
+                    const scrollCount = Math.floor(Math.abs(scrollAccumulator) / scrollThreshold);
+
+                    // Visual feedback
+                    scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
+                    scrollWheel.classList.add(direction === 'up' ? 'scrolling-up' : 'scrolling-down');
+
+                    // Send scroll commands
+                    for (let i = 0; i < scrollCount; i++) {
+                        if (direction === 'up') {
+                            // Page Up or Shift+Up for scrolling up
+                            sendTerminalKey('PageUp', {});
+                        } else {
+                            // Page Down or Shift+Down for scrolling down
+                            sendTerminalKey('PageDown', {});
+                        }
+                    }
+
+                    // Reset accumulator but keep remainder
+                    scrollAccumulator = scrollAccumulator % scrollThreshold;
+
+                    // Show toast for feedback
+                    if (scrollCount > 0) {
+                        showToast(direction === 'up' ? 'Scroll Up' : 'Scroll Down', direction === 'up' ? 'chevron-up' : 'chevron-down');
+                    }
+                }
+            }
+
+            function endDrag() {
+                isDragging = false;
+                scrollWheel.style.cursor = 'grab';
+                scrollWheel.classList.remove('scrolling-up', 'scrolling-down');
+
+                const inner = scrollWheel.querySelector('.scroll-wheel-inner');
+                if (inner) {
+                    inner.style.transform = '';
+                }
+            }
+
+            // Touch events
+            scrollWheel.addEventListener('touchstart', startDrag, { passive: true });
+            scrollWheel.addEventListener('touchmove', doDrag, { passive: false });
+            scrollWheel.addEventListener('touchend', endDrag);
+            scrollWheel.addEventListener('touchcancel', endDrag);
+
+            // Mouse events for desktop testing
+            scrollWheel.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', doDrag);
+            document.addEventListener('mouseup', endDrag);
+
+            console.log('[SETUP] Scroll wheel setup complete');
         }
 
         function setupTerminalControls() {
