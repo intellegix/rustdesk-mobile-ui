@@ -1717,6 +1717,165 @@
             color: white;
         }
 
+        /* Claude Code Actions Section */
+        .claude-actions-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .claude-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding-left: 2px;
+        }
+
+        .claude-actions-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .claude-action-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 10px;
+            border: 2px solid;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            transition: all 0.15s ease;
+        }
+
+        .claude-action-btn .btn-label {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .claude-action-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* Yes button - green */
+        .claude-action-btn.yes-btn {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: #22C55E;
+            color: #22C55E;
+        }
+        .claude-action-btn.yes-btn:active {
+            background: #22C55E;
+            color: white;
+        }
+
+        /* No button - red */
+        .claude-action-btn.no-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #EF4444;
+            color: #EF4444;
+        }
+        .claude-action-btn.no-btn:active {
+            background: #EF4444;
+            color: white;
+        }
+
+        /* Skip/Retry button - orange */
+        .claude-action-btn.skip-btn {
+            background: rgba(249, 115, 22, 0.15);
+            border-color: #F97316;
+            color: #F97316;
+        }
+        .claude-action-btn.skip-btn:active {
+            background: #F97316;
+            color: white;
+        }
+
+        /* Cancel button - gray */
+        .claude-action-btn.cancel-btn {
+            background: rgba(107, 114, 128, 0.15);
+            border-color: #6B7280;
+            color: #9CA3AF;
+        }
+        .claude-action-btn.cancel-btn:active {
+            background: #6B7280;
+            color: white;
+        }
+
+        /* Option number buttons */
+        .option-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .option-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 10px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 2px solid #3B82F6;
+            color: #3B82F6;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .option-btn .opt-label {
+            font-size: 9px;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .option-btn:active {
+            transform: scale(0.92);
+            background: #3B82F6;
+            color: white;
+        }
+
+        /* Navigation keys row */
+        .nav-keys-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-key {
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .nav-key:active {
+            transform: scale(0.92);
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .nav-key svg {
+            width: 16px;
+            height: 16px;
+        }
+
         .terminal-input-row {
             display: flex;
             gap: 10px;
@@ -2657,17 +2816,20 @@
 
         <!-- Terminal Keyboard Controls (shown for terminal windows) -->
         <div class="terminal-keyboard" id="terminal-keyboard">
-            <!-- Tab Switcher Row (Ctrl+Alt+1-6) -->
-            <div class="terminal-tab-switcher">
-                <button class="tab-btn" data-tab="1" title="Ctrl+Alt+1">1</button>
-                <button class="tab-btn" data-tab="2" title="Ctrl+Alt+2">2</button>
-                <button class="tab-btn" data-tab="3" title="Ctrl+Alt+3">3</button>
-                <button class="tab-btn" data-tab="4" title="Ctrl+Alt+4">4</button>
-                <button class="tab-btn" data-tab="5" title="Ctrl+Alt+5">5</button>
-                <button class="tab-btn" data-tab="6" title="Ctrl+Alt+6">6</button>
-                <button class="tab-btn tab-new" id="tab-new" title="Recent directories">
-                    <i data-lucide="folder-open"></i>
-                </button>
+            <!-- Terminal Tabs Row -->
+            <div class="claude-actions-section">
+                <div class="claude-section-label">Terminal Tabs (Ctrl+Alt+#)</div>
+                <div class="terminal-tab-switcher">
+                    <button class="tab-btn" data-tab="1" title="Ctrl+Alt+1">1</button>
+                    <button class="tab-btn" data-tab="2" title="Ctrl+Alt+2">2</button>
+                    <button class="tab-btn" data-tab="3" title="Ctrl+Alt+3">3</button>
+                    <button class="tab-btn" data-tab="4" title="Ctrl+Alt+4">4</button>
+                    <button class="tab-btn" data-tab="5" title="Ctrl+Alt+5">5</button>
+                    <button class="tab-btn" data-tab="6" title="Ctrl+Alt+6">6</button>
+                    <button class="tab-btn tab-new" id="tab-new" title="Recent directories">
+                        <i data-lucide="folder-open"></i>
+                    </button>
+                </div>
             </div>
             <!-- Recent Directories Dialog -->
             <div class="recent-dirs-dialog" id="recent-dirs-dialog">
@@ -2676,15 +2838,79 @@
                     <!-- Populated dynamically -->
                 </div>
             </div>
-            <div class="terminal-quick-keys">
-                <button class="term-key" data-key="ArrowUp" title="Up">↑</button>
-                <button class="term-key" data-key="ArrowDown" title="Down">↓</button>
-                <button class="term-key" data-key="Tab" title="Tab">Tab</button>
-                <button class="term-key" data-key="Escape" title="Esc">Esc</button>
-                <button class="term-key num-key" data-num="1" title="Quick 1">1</button>
-                <button class="term-key num-key" data-num="2" title="Quick 2">2</button>
-                <button class="term-key num-key" data-num="3" title="Quick 3">3</button>
+
+            <!-- Claude Code Actions -->
+            <div class="claude-actions-section">
+                <div class="claude-section-label">Claude Actions</div>
+                <div class="claude-actions-row">
+                    <button class="claude-action-btn yes-btn" id="claude-yes" title="Press Y for Yes">
+                        <span>Y</span>
+                        <span class="btn-label">Yes</span>
+                    </button>
+                    <button class="claude-action-btn no-btn" id="claude-no" title="Press N for No">
+                        <span>N</span>
+                        <span class="btn-label">No</span>
+                    </button>
+                    <button class="claude-action-btn skip-btn" id="claude-skip" title="Press S to Skip">
+                        <span>S</span>
+                        <span class="btn-label">Skip</span>
+                    </button>
+                    <button class="claude-action-btn cancel-btn" id="claude-cancel" title="Ctrl+C to Cancel">
+                        <span>^C</span>
+                        <span class="btn-label">Cancel</span>
+                    </button>
+                </div>
             </div>
+
+            <!-- Quick Option Selection -->
+            <div class="claude-actions-section">
+                <div class="claude-section-label">Select Option (types number + Enter)</div>
+                <div class="option-buttons">
+                    <button class="option-btn" data-option="1" title="Type 1 and Enter">
+                        <span>1</span>
+                        <span class="opt-label">Option</span>
+                    </button>
+                    <button class="option-btn" data-option="2" title="Type 2 and Enter">
+                        <span>2</span>
+                        <span class="opt-label">Option</span>
+                    </button>
+                    <button class="option-btn" data-option="3" title="Type 3 and Enter">
+                        <span>3</span>
+                        <span class="opt-label">Option</span>
+                    </button>
+                    <button class="option-btn" data-option="4" title="Type 4 and Enter">
+                        <span>4</span>
+                        <span class="opt-label">Option</span>
+                    </button>
+                    <button class="option-btn" data-option="5" title="Type 5 and Enter">
+                        <span>5</span>
+                        <span class="opt-label">Option</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Keys -->
+            <div class="claude-actions-section">
+                <div class="claude-section-label">Navigation</div>
+                <div class="nav-keys-row">
+                    <button class="nav-key" data-key="ArrowUp" title="Up Arrow">
+                        <i data-lucide="arrow-up"></i> Up
+                    </button>
+                    <button class="nav-key" data-key="ArrowDown" title="Down Arrow">
+                        <i data-lucide="arrow-down"></i> Down
+                    </button>
+                    <button class="nav-key" data-key="Tab" title="Tab - Autocomplete">
+                        Tab
+                    </button>
+                    <button class="nav-key" data-key="Escape" title="Escape">
+                        Esc
+                    </button>
+                    <button class="nav-key" data-key="Enter" title="Enter - Confirm">
+                        ↵ Enter
+                    </button>
+                </div>
+            </div>
+
             <div class="terminal-input-row">
                 <button class="term-clear-local" id="term-clear-local" title="Clear input">
                     <i data-lucide="x"></i>
@@ -4708,15 +4934,57 @@
                 });
             });
 
-            // Number keys (1, 2, 3) - send number + Enter for quick option selection
-            const numKeys = document.querySelectorAll('.term-key.num-key');
-            console.log('[SETUP] Found', numKeys.length, 'number keys');
-            numKeys.forEach(btn => {
+            // Claude Action Buttons (Yes, No, Skip, Cancel)
+            const claudeYes = document.getElementById('claude-yes');
+            const claudeNo = document.getElementById('claude-no');
+            const claudeSkip = document.getElementById('claude-skip');
+            const claudeCancel = document.getElementById('claude-cancel');
+
+            if (claudeYes) {
+                claudeYes.addEventListener('click', () => {
+                    sendTerminalCommand('y');
+                    showToast('Yes (Y)', 'check');
+                });
+            }
+
+            if (claudeNo) {
+                claudeNo.addEventListener('click', () => {
+                    sendTerminalCommand('n');
+                    showToast('No (N)', 'x');
+                });
+            }
+
+            if (claudeSkip) {
+                claudeSkip.addEventListener('click', () => {
+                    sendTerminalCommand('s');
+                    showToast('Skip (S)', 'skip-forward');
+                });
+            }
+
+            if (claudeCancel) {
+                claudeCancel.addEventListener('click', () => {
+                    sendTerminalKey('c', { ctrl: true });
+                    showToast('Cancel (Ctrl+C)', 'octagon');
+                });
+            }
+
+            // Option buttons (1-5) - types number + Enter
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const num = btn.dataset.num;
-                    console.log('[TERM] Number key clicked:', num);
-                    sendTerminalCommand(num);
-                    showToast('Sent: ' + num, 'hash');
+                    const optNum = btn.dataset.option;
+                    sendTerminalCommand(optNum);
+                    showToast('Option ' + optNum, 'hash');
+                });
+            });
+
+            // Navigation keys (new nav-key class)
+            const navKeys = document.querySelectorAll('.nav-key');
+            navKeys.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.key;
+                    sendTerminalKey(key, {});
+                    showToast(key.replace('Arrow', ''), 'keyboard');
                 });
             });
 
