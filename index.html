@@ -2156,6 +2156,21 @@
         .claude-menu-tab[data-tab="vim"].active { background: #F59E0B; }
         .claude-menu-tab[data-tab="multi"].active { background: #06B6D4; }
 
+        /* Tab Navigation Hint */
+        .claude-tab-hint {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 4px 8px;
+            text-align: center;
+        }
+
+        .hint-text {
+            font-size: 10px;
+            color: var(--text-muted);
+            opacity: 0.8;
+            font-family: var(--font-mono);
+        }
+
         /* Panel Container */
         .claude-menu-panel {
             display: none;
@@ -3261,10 +3276,13 @@
                 <div class="claude-menu" id="claude-menu">
                     <!-- Tab Buttons -->
                     <div class="claude-menu-tabs">
-                        <button class="claude-menu-tab active" data-tab="keys">Keys</button>
-                        <button class="claude-menu-tab" data-tab="cmds">/Cmds</button>
-                        <button class="claude-menu-tab" data-tab="vim">Vim</button>
-                        <button class="claude-menu-tab" data-tab="multi">Multi</button>
+                        <button class="claude-menu-tab active" data-tab="keys" title="Keys Panel (Press 1)">1 Keys</button>
+                        <button class="claude-menu-tab" data-tab="cmds" title="Commands Panel (Press 2)">2 /Cmds</button>
+                        <button class="claude-menu-tab" data-tab="vim" title="Vim Panel (Press 3)">3 Vim</button>
+                        <button class="claude-menu-tab" data-tab="multi" title="Multi Panel (Press 4)">4 Multi</button>
+                    </div>
+                    <div class="claude-tab-hint">
+                        <span class="hint-text">Use ← → arrows or Tab to cycle • Press 1-4 for direct access</span>
                     </div>
 
                     <!-- Panel: Keys -->
@@ -5512,6 +5530,92 @@
                         document.getElementById(`panel-${tabName}`)?.classList.add('active');
                     });
                 });
+
+                // Claude menu tab cycling function
+                function cycleClaude MenuTab(direction = 1) {
+                    const tabOrder = ['keys', 'cmds', 'vim', 'multi'];
+                    const currentTab = document.querySelector('.claude-menu-tab.active');
+                    if (!currentTab) return;
+
+                    const currentIndex = tabOrder.indexOf(currentTab.dataset.tab);
+                    if (currentIndex === -1) return;
+
+                    // Calculate next index with wraparound
+                    let nextIndex = (currentIndex + direction) % tabOrder.length;
+                    if (nextIndex < 0) nextIndex = tabOrder.length - 1;
+
+                    const nextTabName = tabOrder[nextIndex];
+                    const nextTab = document.querySelector(`[data-tab="${nextTabName}"]`);
+
+                    if (nextTab) {
+                        // Update active tab
+                        document.querySelectorAll('.claude-menu-tab').forEach(t => t.classList.remove('active'));
+                        nextTab.classList.add('active');
+
+                        // Update active panel
+                        document.querySelectorAll('.claude-menu-panel').forEach(p => p.classList.remove('active'));
+                        document.getElementById(`panel-${nextTabName}`)?.classList.add('active');
+
+                        // Show toast feedback with tab-specific icons
+                        const tabIcons = {
+                            keys: 'keyboard',
+                            cmds: 'terminal',
+                            vim: 'edit-3',
+                            multi: 'layers'
+                        };
+                        const tabLabels = {
+                            keys: 'Keys Panel',
+                            cmds: 'Commands Panel',
+                            vim: 'Vim Panel',
+                            multi: 'Multi Panel'
+                        };
+
+                        showToast(tabLabels[nextTabName], tabIcons[nextTabName]);
+                    }
+                }
+
+                // Tab cycling keyboard shortcuts (when Claude menu is visible)
+                function handleClaude MenuKeyboard(e) {
+                    const claudeMenu = document.getElementById('claude-menu');
+                    if (!claudeMenu.classList.contains('show')) return;
+
+                    // Right arrow or Tab: cycle forward
+                    if (e.key === 'ArrowRight' || (e.key === 'Tab' && !e.shiftKey)) {
+                        e.preventDefault();
+                        cycleClaude MenuTab(1);
+                    }
+                    // Left arrow or Shift+Tab: cycle backward
+                    else if (e.key === 'ArrowLeft' || (e.key === 'Tab' && e.shiftKey)) {
+                        e.preventDefault();
+                        cycleClaude MenuTab(-1);
+                    }
+                    // Number keys 1-4: direct tab access
+                    else if (e.key >= '1' && e.key <= '4') {
+                        e.preventDefault();
+                        const tabOrder = ['keys', 'cmds', 'vim', 'multi'];
+                        const tabIndex = parseInt(e.key) - 1;
+                        const targetTabName = tabOrder[tabIndex];
+                        const targetTab = document.querySelector(`[data-tab="${targetTabName}"]`);
+
+                        if (targetTab) {
+                            // Update active tab
+                            document.querySelectorAll('.claude-menu-tab').forEach(t => t.classList.remove('active'));
+                            targetTab.classList.add('active');
+
+                            // Update active panel
+                            document.querySelectorAll('.claude-menu-panel').forEach(p => p.classList.remove('active'));
+                            document.getElementById(`panel-${targetTabName}`)?.classList.add('active');
+
+                            // Show toast feedback
+                            const tabLabels = { keys: 'Keys Panel', cmds: 'Commands Panel', vim: 'Vim Panel', multi: 'Multi Panel' };
+                            const tabIcons = { keys: 'keyboard', cmds: 'terminal', vim: 'edit-3', multi: 'layers' };
+                            showToast(`${e.key}: ${tabLabels[targetTabName]}`, tabIcons[targetTabName]);
+                        }
+                    }
+                }
+
+                // Add keyboard event listener for Claude menu
+                document.addEventListener('keydown', handleClaude MenuKeyboard);
 
                 // Slash command handlers
                 document.querySelectorAll('.claude-cmd-btn').forEach(btn => {
