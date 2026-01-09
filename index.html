@@ -1569,6 +1569,21 @@
             justify-content: space-between;
         }
 
+        .terminal-tab-cycling-hint {
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .tab-cycle-hint {
+            font-size: 9px;
+            color: var(--text-muted);
+            opacity: 0.7;
+            font-family: var(--font-mono);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
         .tab-btn {
             flex: 1;
             height: 34px;
@@ -1680,6 +1695,107 @@
 
         .scroll-wheel-indicator {
             display: none;
+        }
+
+        /* Footer Menu Container */
+        .scroll-menu-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-menu-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .footer-menu-btn:active {
+            background: var(--accent-orange);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .footer-menu-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Footer Menu Popup */
+        .footer-menu {
+            position: fixed;
+            bottom: 65px;
+            right: 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            min-width: 280px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .footer-menu.show {
+            display: block;
+        }
+
+        .footer-menu-section {
+            margin-bottom: 12px;
+        }
+
+        .footer-menu-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .footer-menu-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .footer-menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .footer-menu-item {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .footer-menu-item:active {
+            background: var(--accent-orange);
+            color: white;
+            transform: scale(0.98);
+        }
+
+        .footer-menu-item svg {
+            width: 14px;
+            height: 14px;
         }
 
         /* Recent Directories Dialog */
@@ -3222,6 +3338,9 @@
                         <i data-lucide="folder-open"></i>
                     </button>
                 </div>
+                <div class="terminal-tab-cycling-hint">
+                    <span class="tab-cycle-hint" title="Double-tap to customize which tabs to cycle">Ctrl+Shift+← → to cycle tabs (1,2,3)</span>
+                </div>
             </div>
             <!-- Recent Directories Dialog -->
             <div class="recent-dirs-dialog" id="recent-dirs-dialog">
@@ -3574,15 +3693,66 @@
                     </button>
                 </div>
             </div>
-            <!-- Scroll Wheel -->
-            <div class="scroll-wheel" id="scroll-wheel" title="Drag up/down to scroll">
-                <div class="scroll-wheel-inner">
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
-                    <div class="scroll-wheel-notch"></div>
+            <!-- Scroll Wheel and Menu -->
+            <div class="scroll-menu-container">
+                <button class="footer-menu-btn" id="footer-menu-btn" title="Quick Actions Menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="scroll-wheel" id="scroll-wheel" title="Drag up/down to scroll">
+                    <div class="scroll-wheel-inner">
+                        <div class="scroll-wheel-notch"></div>
+                        <div class="scroll-wheel-notch"></div>
+                        <div class="scroll-wheel-notch"></div>
+                        <div class="scroll-wheel-notch"></div>
+                        <div class="scroll-wheel-notch"></div>
+                        <div class="scroll-wheel-notch"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Menu Popup -->
+            <div class="footer-menu" id="footer-menu">
+                <div class="footer-menu-section">
+                    <div class="footer-menu-title">Quick Actions</div>
+                    <div class="footer-menu-grid">
+                        <button class="footer-menu-item" id="footer-scroll-top">
+                            <i data-lucide="arrow-up-to-line"></i>
+                            <span>Scroll Top</span>
+                        </button>
+                        <button class="footer-menu-item" id="footer-scroll-bottom">
+                            <i data-lucide="arrow-down-to-line"></i>
+                            <span>Scroll Bottom</span>
+                        </button>
+                        <button class="footer-menu-item" id="footer-home">
+                            <i data-lucide="home"></i>
+                            <span>Go Home</span>
+                        </button>
+                        <button class="footer-menu-item" id="footer-refresh">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="footer-menu-section">
+                    <div class="footer-menu-title">Terminal Actions</div>
+                    <div class="footer-menu-grid">
+                        <button class="footer-menu-item" id="footer-clear">
+                            <i data-lucide="eraser"></i>
+                            <span>Clear</span>
+                        </button>
+                        <button class="footer-menu-item" id="footer-cancel">
+                            <i data-lucide="x-circle"></i>
+                            <span>Cancel</span>
+                        </button>
+                        <button class="footer-menu-item" id="footer-copy">
+                            <i data-lucide="copy"></i>
+                            <span>Copy</span>
+                        </button>
+                        <button class="footer-menu-item" id="footer-paste">
+                            <i data-lucide="clipboard"></i>
+                            <span>Paste</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </footer>
@@ -5968,6 +6138,173 @@
                     showToast('Tab ' + tabNum, 'layout-grid');
                 });
             });
+
+            // Terminal tab cycling functionality with custom tab selection
+            let currentTerminalTab = 1;
+            let customTabList = [1, 2, 3]; // Default tabs to cycle between
+            let customTabIndex = 0;
+
+            function setCustomTabList(tabs) {
+                customTabList = tabs.filter(tab => tab >= 1 && tab <= 6);
+                if (customTabList.length === 0) customTabList = [1, 2, 3]; // Fallback
+                currentTerminalTab = customTabList[0];
+                customTabIndex = 0;
+                console.log('[TERM] Custom tab list set:', customTabList);
+                showToast(`Cycling tabs: ${customTabList.join(', ')}`, 'settings');
+            }
+
+            function cycleTerminalTab(direction = 1) {
+                // Use custom tab list for cycling
+                customTabIndex += direction;
+                if (customTabIndex >= customTabList.length) customTabIndex = 0;
+                if (customTabIndex < 0) customTabIndex = customTabList.length - 1;
+
+                currentTerminalTab = customTabList[customTabIndex];
+
+                console.log('[TERM] Cycling to tab:', currentTerminalTab, 'index:', customTabIndex);
+                sendTerminalKey(currentTerminalTab.toString(), { ctrl: true, alt: true });
+                showToast(`Terminal Tab ${currentTerminalTab} (${customTabIndex + 1}/${customTabList.length})`, 'layout-grid');
+
+                // Visual feedback - highlight the tab button briefly
+                const targetBtn = document.querySelector(`[data-tab="${currentTerminalTab}"]`);
+                if (targetBtn && targetBtn.classList.contains('tab-btn')) {
+                    targetBtn.style.background = 'var(--accent-orange)';
+                    targetBtn.style.color = 'white';
+                    setTimeout(() => {
+                        targetBtn.style.background = '';
+                        targetBtn.style.color = '';
+                    }, 200);
+                }
+            }
+
+            // Terminal tab cycling keyboard shortcuts
+            function handleTerminalTabCycling(e) {
+                // Only when terminal keyboard is visible
+                const termKeyboard = document.getElementById('terminal-keyboard');
+                if (!termKeyboard || !termKeyboard.offsetParent) return;
+
+                // Ctrl+Shift+Right Arrow: cycle forward
+                if (e.key === 'ArrowRight' && e.ctrlKey && e.shiftKey) {
+                    e.preventDefault();
+                    cycleTerminalTab(1);
+                }
+                // Ctrl+Shift+Left Arrow: cycle backward
+                else if (e.key === 'ArrowLeft' && e.ctrlKey && e.shiftKey) {
+                    e.preventDefault();
+                    cycleTerminalTab(-1);
+                }
+                // Ctrl+Shift+Tab: cycle forward (alternative)
+                else if (e.key === 'Tab' && e.ctrlKey && e.shiftKey) {
+                    e.preventDefault();
+                    cycleTerminalTab(1);
+                }
+            }
+
+            // Add keyboard event listener for terminal tab cycling
+            document.addEventListener('keydown', handleTerminalTabCycling);
+
+            // Footer menu functionality
+            const footerMenuBtn = document.getElementById('footer-menu-btn');
+            const footerMenu = document.getElementById('footer-menu');
+
+            if (footerMenuBtn && footerMenu) {
+                footerMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    footerMenu.classList.toggle('show');
+                });
+
+                // Close footer menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!footerMenu.contains(e.target) && !footerMenuBtn.contains(e.target)) {
+                        footerMenu.classList.remove('show');
+                    }
+                });
+
+                // Footer menu item handlers
+                document.getElementById('footer-scroll-top')?.addEventListener('click', () => {
+                    sendTerminalKey('Home', { ctrl: true });
+                    showToast('Scroll to Top', 'arrow-up-to-line');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-scroll-bottom')?.addEventListener('click', () => {
+                    sendTerminalKey('End', { ctrl: true });
+                    showToast('Scroll to Bottom', 'arrow-down-to-line');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-home')?.addEventListener('click', () => {
+                    sendTerminalCommand('cd ~');
+                    showToast('Go Home Directory', 'home');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-refresh')?.addEventListener('click', () => {
+                    sendTerminalKey('F5', {});
+                    showToast('Refresh', 'refresh-cw');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-clear')?.addEventListener('click', () => {
+                    sendTerminalKey('l', { ctrl: true });
+                    showToast('Clear Terminal', 'eraser');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-cancel')?.addEventListener('click', () => {
+                    sendTerminalKey('c', { ctrl: true });
+                    showToast('Cancel Command', 'x-circle');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-copy')?.addEventListener('click', () => {
+                    sendTerminalKey('c', { ctrl: true, shift: true });
+                    showToast('Copy Selection', 'copy');
+                    footerMenu.classList.remove('show');
+                });
+
+                document.getElementById('footer-paste')?.addEventListener('click', () => {
+                    sendTerminalKey('v', { ctrl: true, shift: true });
+                    showToast('Paste', 'clipboard');
+                    footerMenu.classList.remove('show');
+                });
+            }
+
+            // Custom tab cycling configuration
+            // Double-tap on terminal tab cycling hint to configure
+            const tabHint = document.querySelector('.tab-cycle-hint');
+            if (tabHint) {
+                let tapCount = 0;
+                let tapTimeout;
+
+                tabHint.addEventListener('click', () => {
+                    tapCount++;
+                    if (tapCount === 1) {
+                        tapTimeout = setTimeout(() => {
+                            tapCount = 0;
+                        }, 300);
+                    } else if (tapCount === 2) {
+                        clearTimeout(tapTimeout);
+                        tapCount = 0;
+
+                        // Show custom tab configuration dialog
+                        const currentTabs = customTabList.join(', ');
+                        const input = prompt(`Enter tabs to cycle (1-6, comma separated):\nCurrent: ${currentTabs}`, currentTabs);
+
+                        if (input !== null) {
+                            const newTabs = input.split(',')
+                                .map(t => parseInt(t.trim()))
+                                .filter(t => !isNaN(t) && t >= 1 && t <= 6);
+
+                            if (newTabs.length > 0) {
+                                setCustomTabList(newTabs);
+                            } else {
+                                showToast('Invalid tab numbers', 'alert-circle');
+                            }
+                        }
+                    }
+                });
+            }
 
             // Claude Options quick buttons (1-5) - send just the number for Claude Code option selection
             const optionBtns = document.querySelectorAll('.option-btn');
