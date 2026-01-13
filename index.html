@@ -4104,19 +4104,28 @@
 
                         // Start scrolling if moved more than 5px vertically (reduced threshold)
                         if (totalDeltaY > 5 || this.isScrolling) {
+                            if (!this.isScrolling) {
+                                console.log('[TOUCH-DEBUG] Starting scroll gesture, totalDeltaY:', totalDeltaY);
+                            }
                             this.isScrolling = true;
                             e.preventDefault();
 
                             this.accumulatedScroll += deltaY;
+                            console.log('[TOUCH-DEBUG] Accumulated scroll:', this.accumulatedScroll, 'deltaY:', deltaY);
 
                             // Send scroll - right edge gets 4x speed like a scrollbar
                             const scrollMultiplier = this.isRightEdgeScroll ? 4 : 2;
                             const threshold = this.isRightEdgeScroll ? 5 : 10;
 
+                            console.log('[TOUCH-DEBUG] Scroll multiplier:', scrollMultiplier, 'threshold:', threshold, 'isRightEdge:', this.isRightEdgeScroll);
+
                             if (Math.abs(this.accumulatedScroll) > threshold) {
+                                console.log('[TOUCH-DEBUG] Threshold exceeded, sending scroll command');
                                 this.streamController.sendRemoteScroll(0, this.accumulatedScroll * scrollMultiplier);
                                 this.accumulatedScroll = 0;
                             }
+                        } else {
+                            console.log('[TOUCH-DEBUG] Touch movement below threshold:', totalDeltaY);
                         }
                         this.lastScrollY = touch.clientY;
                     }
@@ -4674,14 +4683,35 @@
             }
 
             sendRemoteScroll(deltaX, deltaY) {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({
-                        type: 'remote_scroll',
-                        window_id: this.currentWindowId,
-                        delta_x: deltaX,
-                        delta_y: deltaY
-                    }));
+                console.log(`[SCROLL-DEBUG] sendRemoteScroll called: deltaX=${deltaX}, deltaY=${deltaY}`);
+                console.log(`[SCROLL-DEBUG] WebSocket state: ${ws ? ws.readyState : 'null'}`);
+                console.log(`[SCROLL-DEBUG] Current window ID: ${this.currentWindowId}`);
+
+                if (!ws) {
+                    console.log('[SCROLL-ERROR] WebSocket is null');
+                    return;
                 }
+
+                if (ws.readyState !== WebSocket.OPEN) {
+                    console.log(`[SCROLL-ERROR] WebSocket not open. State: ${ws.readyState}`);
+                    return;
+                }
+
+                if (!this.currentWindowId) {
+                    console.log('[SCROLL-ERROR] No current window ID set');
+                    return;
+                }
+
+                const scrollMessage = {
+                    type: 'remote_scroll',
+                    window_id: this.currentWindowId,
+                    delta_x: deltaX,
+                    delta_y: deltaY
+                };
+
+                console.log('[SCROLL-DEBUG] Sending scroll message:', scrollMessage);
+                ws.send(JSON.stringify(scrollMessage));
+                console.log('[SCROLL-DEBUG] Scroll message sent successfully');
             }
 
             // Window actions
@@ -5037,10 +5067,12 @@
                     const action = btn.dataset.action;
                     switch(action) {
                         case 'scroll-up':
+                            console.log('[BUTTON-DEBUG] Scroll up button clicked');
                             streamController.sendRemoteScroll(0, -100);
                             showToast('Scroll up', 'arrow-up');
                             break;
                         case 'scroll-down':
+                            console.log('[BUTTON-DEBUG] Scroll down button clicked');
                             streamController.sendRemoteScroll(0, 100);
                             showToast('Scroll down', 'arrow-down');
                             break;
