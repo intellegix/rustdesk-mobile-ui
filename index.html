@@ -1336,6 +1336,37 @@
             color: white;
         }
 
+        /* Claude Option Selection Row */
+        .claude-option-row {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            justify-content: center;
+        }
+
+        .claude-option-btn {
+            min-width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 2px solid #3B82F6;
+            color: #3B82F6;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex: 1;
+            max-width: 60px;
+        }
+
+        .claude-option-btn:active {
+            transform: scale(0.92);
+            background: #3B82F6;
+            color: white;
+        }
+
         .browser-nav-row {
             display: flex;
             padding: 8px 16px;
@@ -1588,6 +1619,22 @@
         .tab-btn.tab-new svg {
             width: 20px;
             height: 20px;
+        }
+
+        .tab-btn.tab-close {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #EF4444;
+            color: #EF4444;
+        }
+
+        .tab-btn.tab-close:active {
+            background: #EF4444;
+            color: white;
+        }
+
+        .tab-btn.tab-close svg {
+            width: 18px;
+            height: 18px;
         }
 
         /* Recent Directories Dialog */
@@ -2784,6 +2831,14 @@
                 <button class="chrome-tab-btn" data-tab="8" title="Ctrl+8">8</button>
                 <button class="chrome-tab-btn" data-tab="9" title="Ctrl+9 (Last)">9</button>
             </div>
+            <!-- Claude Option Selection Row -->
+            <div class="claude-option-row">
+                <button class="claude-option-btn" data-option="1" title="Claude Option 1">1</button>
+                <button class="claude-option-btn" data-option="2" title="Claude Option 2">2</button>
+                <button class="claude-option-btn" data-option="3" title="Claude Option 3">3</button>
+                <button class="claude-option-btn" data-option="4" title="Claude Option 4">4</button>
+                <button class="claude-option-btn" data-option="5" title="Claude Option 5">5</button>
+            </div>
             <!-- Navigation Row -->
             <div class="browser-nav-row">
                 <button class="browser-nav-btn" id="browser-back" title="Back">
@@ -2851,7 +2906,18 @@
                     <button class="tab-btn tab-new" id="tab-new" title="Recent directories">
                         <i data-lucide="folder-open"></i>
                     </button>
+                    <button class="tab-btn tab-close" id="tab-close" title="Close current terminal (Ctrl+D)">
+                        <i data-lucide="x"></i>
+                    </button>
                 </div>
+            </div>
+            <!-- Claude Option Selection Row -->
+            <div class="claude-option-row">
+                <button class="claude-option-btn" data-option="1" title="Claude Option 1">1</button>
+                <button class="claude-option-btn" data-option="2" title="Claude Option 2">2</button>
+                <button class="claude-option-btn" data-option="3" title="Claude Option 3">3</button>
+                <button class="claude-option-btn" data-option="4" title="Claude Option 4">4</button>
+                <button class="claude-option-btn" data-option="5" title="Claude Option 5">5</button>
             </div>
             <!-- Recent Directories Dialog -->
             <div class="recent-dirs-dialog" id="recent-dirs-dialog">
@@ -4954,6 +5020,16 @@
                 });
             });
 
+            // Claude option selection buttons (1-5) - send option number
+            const claudeOptionBtns = document.querySelectorAll('.claude-option-btn');
+            claudeOptionBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const option = btn.dataset.option;
+                    sendTerminalCommand(option);
+                    showToast(`Claude Option ${option}`, 'hash');
+                });
+            });
+
             // Chrome quick action keys
             const chromeKeys = document.querySelectorAll('.chrome-key');
             chromeKeys.forEach(btn => {
@@ -5136,6 +5212,18 @@
                     console.log('[TERM] Tab button clicked:', tabNum);
                     sendTerminalKey(tabNum, { ctrl: true, alt: true });
                     showToast('Tab ' + tabNum, 'layout-grid');
+                });
+            });
+
+            // Claude option selection buttons (1-5) - send option number
+            const claudeOptionBtns = document.querySelectorAll('.claude-option-btn');
+            console.log('[SETUP] Found', claudeOptionBtns.length, 'Claude option buttons');
+            claudeOptionBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const option = btn.dataset.option;
+                    console.log('[TERM] Claude option button clicked:', option);
+                    sendTerminalCommand(option);
+                    showToast(`Claude Option ${option}`, 'hash');
                 });
             });
 
@@ -5377,6 +5465,18 @@
             });
         }
 
+        // Setup Terminal Close Button
+        function setupTerminalCloseButton() {
+            const tabCloseBtn = document.getElementById('tab-close');
+            if (tabCloseBtn) {
+                tabCloseBtn.addEventListener('click', () => {
+                    console.log('[TERM] Close terminal button clicked');
+                    sendTerminalKey('d', { ctrl: true });
+                    showToast('Close Terminal', 'x');
+                });
+            }
+        }
+
         function renderDirectoryList(dirs) {
             const list = document.getElementById('recent-dirs-list');
             if (!list) return;
@@ -5483,6 +5583,7 @@
             setupTerminalControls();
             setupTerminalKeyboard();
             setupRecentDirectoriesDialog();
+            setupTerminalCloseButton();
             setupFolders();
             setupHostSelector();
             initIcons();
