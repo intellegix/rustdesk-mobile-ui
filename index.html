@@ -1367,6 +1367,75 @@
             color: white;
         }
 
+        /* Arrow Keys Section */
+        .arrow-keys-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .arrow-keys-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+            justify-items: center;
+            max-width: 150px;
+            margin: 0 auto;
+        }
+
+        .arrow-key {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .arrow-key:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-orange);
+        }
+
+        .arrow-key:active {
+            transform: scale(0.92);
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+        }
+
+        .arrow-key.up {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .arrow-key.left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .arrow-key.down {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .arrow-key.right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .arrow-spacer {
+            /* Empty grid spaces */
+        }
+
         .browser-nav-row {
             display: flex;
             padding: 8px 16px;
@@ -2924,6 +2993,27 @@
                 <div class="recent-dirs-header">Recent Directories</div>
                 <div class="recent-dirs-list" id="recent-dirs-list">
                     <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Arrow Keys Section -->
+            <div class="arrow-keys-section">
+                <div class="claude-section-label">Navigation Keys</div>
+                <div class="arrow-keys-grid">
+                    <div class="arrow-spacer"></div>
+                    <button class="arrow-key up" id="arrow-up" title="Arrow Up">
+                        <i data-lucide="arrow-up"></i>
+                    </button>
+                    <div class="arrow-spacer"></div>
+                    <button class="arrow-key left" id="arrow-left" title="Arrow Left">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <button class="arrow-key down" id="arrow-down" title="Arrow Down">
+                        <i data-lucide="arrow-down"></i>
+                    </button>
+                    <button class="arrow-key right" id="arrow-right" title="Arrow Right">
+                        <i data-lucide="arrow-right"></i>
+                    </button>
                 </div>
             </div>
 
@@ -5429,6 +5519,40 @@
                     }
                 });
             }
+
+            // Arrow key buttons
+            const arrowKeys = document.querySelectorAll('.arrow-key');
+            console.log('[SETUP] Found', arrowKeys.length, 'arrow key buttons');
+            arrowKeys.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const direction = btn.id.replace('arrow-', '');
+                    let keyName = '';
+                    let iconName = '';
+
+                    switch(direction) {
+                        case 'up':
+                            keyName = 'ArrowUp';
+                            iconName = 'arrow-up';
+                            break;
+                        case 'down':
+                            keyName = 'ArrowDown';
+                            iconName = 'arrow-down';
+                            break;
+                        case 'left':
+                            keyName = 'ArrowLeft';
+                            iconName = 'arrow-left';
+                            break;
+                        case 'right':
+                            keyName = 'ArrowRight';
+                            iconName = 'arrow-right';
+                            break;
+                    }
+
+                    console.log('[TERM] Arrow key clicked:', direction, keyName);
+                    sendTerminalKey(keyName, {});
+                    showToast(`${direction.charAt(0).toUpperCase() + direction.slice(1)} Arrow`, iconName);
+                });
+            });
 
             console.log('[SETUP] Terminal keyboard setup complete');
         }

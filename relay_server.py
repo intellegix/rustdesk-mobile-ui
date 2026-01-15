@@ -9,8 +9,9 @@ import json
 import os
 import secrets
 import hashlib
+import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Response, Cookie, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,6 +61,10 @@ pc_connection: Optional[WebSocket] = None
 web_connections: list[WebSocket] = []
 pending_requests: dict[str, asyncio.Future] = {}
 
+# Message deduplication tracking (prevents double-sends)
+recent_requests: Dict[str, float] = {}  # request_hash -> timestamp
+DEDUP_WINDOW = 2.0  # 2-second deduplication window
+
 # Shared password for both site access and relay authentication
 SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "Devops$@2026")
 AUTH_TOKEN = SITE_PASSWORD  # Use same password for relay auth
@@ -72,6 +77,119 @@ class RelayMessage(BaseModel):
     endpoint: Optional[str] = None
     method: Optional[str] = None
     data: Optional[dict] = None
+
+
+class ConnectionHealthMonitor:
+    """Monitors connection health and automatically removes dead connections."""
+
+    def __init__(self):
+        self.health_checks = {}
+        self.check_interval = 10.0  # 10-second health checks
+        self.monitoring_task = None
+        self.pending_pongs = {}  # ping_id -> timestamp
+
+    async def start_monitoring(self):
+        """Start continuous health monitoring"""
+        if self.monitoring_task is None:
+            self.monitoring_task = asyncio.create_task(self._monitor_loop())
+            print("[HEALTH] Started connection health monitoring")
+
+    async def stop_monitoring(self):
+        """Stop health monitoring"""
+        if self.monitoring_task:
+            self.monitoring_task.cancel()
+            try:
+                await self.monitoring_task
+            except asyncio.CancelledError:
+                pass
+            self.monitoring_task = None
+
+    async def _monitor_loop(self):
+        """Main monitoring loop"""
+        while True:
+            try:
+                await self._check_all_connections()
+                await asyncio.sleep(self.check_interval)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"[HEALTH] Monitor loop error: {e}")
+                await asyncio.sleep(5)
+
+    async def _check_all_connections(self):
+        """Check health of all PC connections"""
+        global pc_connections
+        current_time = time.time()
+
+        # Clean up old pending pongs
+        expired_pongs = [ping_id for ping_id, timestamp in self.pending_pongs.items()
+                        if current_time - timestamp > 10.0]
+        for ping_id in expired_pongs:
+            self.pending_pongs.pop(ping_id, None)
+
+        for host_id, host_conn in list(pc_connections.items()):
+            try:
+                # Send health ping
+                ping_id = secrets.token_hex(4)
+                self.pending_pongs[ping_id] = current_time
+
+                await host_conn.ws.send_json({
+                    "type": "health_ping",
+                    "ping_id": ping_id,
+                    "timestamp": current_time
+                })
+
+                # Wait for pong (with timeout)
+                try:
+                    await asyncio.wait_for(
+                        self._wait_for_pong(ping_id),
+                        timeout=5.0
+                    )
+                    print(f"[HEALTH] Host {host_id} healthy")
+
+                except asyncio.TimeoutError:
+                    print(f"[HEALTH] Host {host_id} unresponsive - removing")
+                    await self._remove_dead_connection(host_id)
+
+            except Exception as e:
+                print(f"[HEALTH] Health check failed for {host_id}: {e}")
+                await self._remove_dead_connection(host_id)
+
+    async def _wait_for_pong(self, ping_id: str):
+        """Wait for a specific pong response"""
+        start_time = time.time()
+        while ping_id in self.pending_pongs:
+            if time.time() - start_time > 5.0:
+                raise asyncio.TimeoutError()
+            await asyncio.sleep(0.1)
+
+    async def handle_health_pong(self, data: dict):
+        """Handle received health pong"""
+        ping_id = data.get("ping_id")
+        if ping_id and ping_id in self.pending_pongs:
+            server_timestamp = self.pending_pongs.pop(ping_id)
+            latency = (time.time() - server_timestamp) * 1000
+            print(f"[HEALTH] Received pong for {ping_id} (latency: {latency:.2f}ms)")
+
+    async def _remove_dead_connection(self, host_id: str):
+        """Remove a dead connection"""
+        global pc_connections, pc_connection
+
+        if host_id in pc_connections:
+            try:
+                await pc_connections[host_id].ws.close()
+            except:
+                pass
+            pc_connections.pop(host_id, None)
+
+            # Update legacy reference if needed
+            if pc_connection and getattr(pc_connection, 'host_id', None) == host_id:
+                pc_connection = None
+
+            print(f"[HEALTH] Removed dead connection: {host_id}")
+
+# Global health monitor
+health_monitor = ConnectionHealthMonitor()
 
 
 def is_authenticated(session_id: str) -> bool:
@@ -301,7 +419,50 @@ async def select_host(request: Request):
     return {"status": "selected", "host_id": host_id}
 
 
-async def relay_to_pc(endpoint: str, method: str = "GET", data: dict = None) -> dict:
+def generate_request_hash(endpoint: str, method: str, data: dict) -> str:
+    """Generate deterministic hash for request deduplication"""
+    content = f"{endpoint}:{method}:{json.dumps(data, sort_keys=True) if data else 'null'}"
+    return hashlib.md5(content.encode()).hexdigest()
+
+async def relay_to_pc_deduplicated(endpoint: str, method: str = "GET", data: dict = None) -> dict:
+    """Relay a request to the connected PC with deduplication to prevent double-sends"""
+    global recent_requests
+
+    # Check for duplicate request
+    req_hash = generate_request_hash(endpoint, method, data)
+    current_time = time.time()
+
+    # Clean expired entries
+    expired = [h for h, t in recent_requests.items() if current_time - t > DEDUP_WINDOW]
+    for h in expired:
+        recent_requests.pop(h, None)
+
+    # Check for recent duplicate
+    if req_hash in recent_requests:
+        print(f"[DEDUP] Ignoring duplicate request: {endpoint}")
+        return {"status": "deduplicated", "original_time": recent_requests[req_hash]}
+
+    # Record request and proceed
+    recent_requests[req_hash] = current_time
+    return await relay_to_pc_reliable(endpoint, method, data)
+
+async def relay_to_pc_reliable(endpoint: str, method: str = "GET", data: dict = None) -> dict:
+    """Relay a request to the connected PC with retry logic for reliability"""
+    max_retries = 3
+    base_delay = 1.0
+
+    for attempt in range(max_retries):
+        try:
+            return await relay_to_pc(endpoint, method, data)
+        except (asyncio.TimeoutError, ConnectionError) as e:
+            if attempt == max_retries - 1:
+                raise HTTPException(status_code=504, detail=f"Request failed after {max_retries} attempts")
+
+            delay = base_delay * (2 ** attempt)  # 1s, 2s, 4s
+            print(f"[RETRY] Attempt {attempt + 1} failed for {endpoint}, retrying in {delay}s")
+            await asyncio.sleep(delay)
+
+async def relay_to_pc_deduplicated(endpoint: str, method: str = "GET", data: dict = None) -> dict:
     """Relay a request to the connected PC."""
     global pc_connection, pending_requests
 
@@ -333,234 +494,234 @@ async def relay_to_pc(endpoint: str, method: str = "GET", data: dict = None) -> 
 # Proxy all API endpoints to the PC
 @app.get("/api/apps")
 async def get_apps():
-    return await relay_to_pc("/api/apps", "GET")
+    return await relay_to_pc_deduplicated("/api/apps", "GET")
 
 
 @app.post("/api/apps")
 async def save_apps(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/apps", "POST", data)
+    return await relay_to_pc_deduplicated("/api/apps", "POST", data)
 
 
 @app.post("/api/launch/{app_id}")
 async def launch_app(app_id: str):
-    return await relay_to_pc(f"/api/launch/{app_id}", "POST")
+    return await relay_to_pc_deduplicated(f"/api/launch/{app_id}", "POST")
 
 
 @app.post("/api/launch-custom")
 async def launch_custom(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/launch-custom", "POST", data)
+    return await relay_to_pc_deduplicated("/api/launch-custom", "POST", data)
 
 
 @app.get("/api/windows")
 async def get_windows():
-    return await relay_to_pc("/api/windows", "GET")
+    return await relay_to_pc_deduplicated("/api/windows", "GET")
 
 
 @app.post("/api/windows/{window_id}/focus")
 async def focus_window(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/focus", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/focus", "POST")
 
 
 @app.post("/api/windows/{window_id}/close")
 async def close_window(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/close", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/close", "POST")
 
 
 @app.post("/api/windows/{window_id}/minimize")
 async def minimize_window(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/minimize", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/minimize", "POST")
 
 
 @app.post("/api/windows/{window_id}/maximize")
 async def maximize_window(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/maximize", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/maximize", "POST")
 
 
 @app.get("/api/system/volume")
 async def get_volume():
-    return await relay_to_pc("/api/system/volume", "GET")
+    return await relay_to_pc_deduplicated("/api/system/volume", "GET")
 
 
 @app.post("/api/system/volume")
 async def set_volume(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/system/volume", "POST", data)
+    return await relay_to_pc_deduplicated("/api/system/volume", "POST", data)
 
 
 @app.post("/api/system/volume/mute")
 async def toggle_mute():
-    return await relay_to_pc("/api/system/volume/mute", "POST")
+    return await relay_to_pc_deduplicated("/api/system/volume/mute", "POST")
 
 
 @app.get("/api/system/brightness")
 async def get_brightness():
-    return await relay_to_pc("/api/system/brightness", "GET")
+    return await relay_to_pc_deduplicated("/api/system/brightness", "GET")
 
 
 @app.post("/api/system/brightness")
 async def set_brightness(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/system/brightness", "POST", data)
+    return await relay_to_pc_deduplicated("/api/system/brightness", "POST", data)
 
 
 @app.get("/api/clipboard")
 async def get_clipboard():
-    return await relay_to_pc("/api/clipboard", "GET")
+    return await relay_to_pc_deduplicated("/api/clipboard", "GET")
 
 
 @app.post("/api/clipboard")
 async def set_clipboard(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/clipboard", "POST", data)
+    return await relay_to_pc_deduplicated("/api/clipboard", "POST", data)
 
 
 @app.post("/api/paste-image")
 async def paste_image(request: Request):
     """Paste an image to the desktop clipboard and simulate Ctrl+V."""
     data = await request.json()
-    return await relay_to_pc("/api/paste-image", "POST", data)
+    return await relay_to_pc_deduplicated("/api/paste-image", "POST", data)
 
 
 @app.get("/api/rustdesk/status")
 async def get_rustdesk_status():
-    return await relay_to_pc("/api/rustdesk/status", "GET")
+    return await relay_to_pc_deduplicated("/api/rustdesk/status", "GET")
 
 
 @app.get("/api/rustdesk/devices")
 async def get_rustdesk_devices():
     """Get saved RustDesk devices."""
-    return await relay_to_pc("/api/rustdesk/devices", "GET")
+    return await relay_to_pc_deduplicated("/api/rustdesk/devices", "GET")
 
 
 @app.post("/api/rustdesk/connect")
 async def rustdesk_connect(request: Request):
     """Connect to a RustDesk device."""
     data = await request.json()
-    return await relay_to_pc("/api/rustdesk/connect", "POST", data)
+    return await relay_to_pc_deduplicated("/api/rustdesk/connect", "POST", data)
 
 
 @app.get("/api/system/info")
 async def get_system_info():
-    return await relay_to_pc("/api/system/info", "GET")
+    return await relay_to_pc_deduplicated("/api/system/info", "GET")
 
 
 @app.post("/api/action/lock")
 async def action_lock():
-    return await relay_to_pc("/api/action/lock", "POST")
+    return await relay_to_pc_deduplicated("/api/action/lock", "POST")
 
 
 @app.post("/api/action/sleep")
 async def action_sleep():
-    return await relay_to_pc("/api/action/sleep", "POST")
+    return await relay_to_pc_deduplicated("/api/action/sleep", "POST")
 
 
 @app.post("/api/action/screenshot")
 async def action_screenshot():
-    return await relay_to_pc("/api/action/screenshot", "POST")
+    return await relay_to_pc_deduplicated("/api/action/screenshot", "POST")
 
 
 # Window streaming endpoints
 @app.get("/api/windows/{window_id}/info")
 async def get_window_info(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/info", "GET")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/info", "GET")
 
 
 @app.get("/api/windows/{window_id}/snapshot")
 async def get_window_snapshot(window_id: str, quality: int = 60, max_width: int = 800):
-    return await relay_to_pc(f"/api/windows/{window_id}/snapshot", "GET", {"quality": quality, "max_width": max_width})
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snapshot", "GET", {"quality": quality, "max_width": max_width})
 
 
 # Chrome control endpoints
 @app.post("/api/windows/{window_id}/chrome/navigate")
 async def chrome_navigate(window_id: str, request: Request):
     data = await request.json()
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/navigate", "POST", data)
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/navigate", "POST", data)
 
 
 @app.post("/api/windows/{window_id}/chrome/back")
 async def chrome_back(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/back", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/back", "POST")
 
 
 @app.post("/api/windows/{window_id}/chrome/forward")
 async def chrome_forward(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/forward", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/forward", "POST")
 
 
 @app.post("/api/windows/{window_id}/chrome/refresh")
 async def chrome_refresh(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/refresh", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/refresh", "POST")
 
 
 @app.post("/api/windows/{window_id}/chrome/new-tab")
 async def chrome_new_tab(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/new-tab", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/new-tab", "POST")
 
 
 @app.post("/api/windows/{window_id}/chrome/close-tab")
 async def chrome_close_tab(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/close-tab", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/close-tab", "POST")
 
 
 @app.post("/api/windows/{window_id}/chrome/next-tab")
 async def chrome_next_tab(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/next-tab", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/next-tab", "POST")
 
 
 @app.post("/api/windows/{window_id}/chrome/prev-tab")
 async def chrome_prev_tab(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/chrome/prev-tab", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/chrome/prev-tab", "POST")
 
 
 # Window snap/split endpoints
 @app.post("/api/windows/{window_id}/restore")
 async def window_restore(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/restore", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/restore", "POST")
 
 
 @app.post("/api/windows/{window_id}/snap/left")
 async def window_snap_left(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/snap/left", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snap/left", "POST")
 
 
 @app.post("/api/windows/{window_id}/snap/right")
 async def window_snap_right(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/snap/right", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snap/right", "POST")
 
 
 @app.post("/api/windows/{window_id}/snap/top-left")
 async def window_snap_top_left(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/snap/top-left", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snap/top-left", "POST")
 
 
 @app.post("/api/windows/{window_id}/snap/top-right")
 async def window_snap_top_right(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/snap/top-right", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snap/top-right", "POST")
 
 
 @app.post("/api/windows/{window_id}/snap/bottom-left")
 async def window_snap_bottom_left(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/snap/bottom-left", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snap/bottom-left", "POST")
 
 
 @app.post("/api/windows/{window_id}/snap/bottom-right")
 async def window_snap_bottom_right(window_id: str):
-    return await relay_to_pc(f"/api/windows/{window_id}/snap/bottom-right", "POST")
+    return await relay_to_pc_deduplicated(f"/api/windows/{window_id}/snap/bottom-right", "POST")
 
 
 # Folders API endpoints
 @app.post("/api/folders/search")
 async def folders_search(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/folders/search", "POST", data)
+    return await relay_to_pc_deduplicated("/api/folders/search", "POST", data)
 
 
 @app.post("/api/folders/open")
 async def folders_open(request: Request):
     data = await request.json()
-    return await relay_to_pc("/api/folders/open", "POST", data)
+    return await relay_to_pc_deduplicated("/api/folders/open", "POST", data)
 
 
 @app.websocket("/ws/pc")
@@ -627,6 +788,10 @@ async def pc_websocket(websocket: WebSocket):
                     print(f"Host registered: {host.host_name} ({host.platform})")
                     print(f"Total hosts connected: {len(pc_connections)}")
 
+                    # Start health monitoring if this is the first host
+                    if len(pc_connections) == 1:
+                        await health_monitor.start_monitoring()
+
                     # Notify web clients about new host (only after registration)
                     for wc in web_connections:
                         try:
@@ -648,6 +813,11 @@ async def pc_websocket(websocket: WebSocket):
                             })
                         except:
                             pass
+                continue
+
+            if msg_type == "health_pong":
+                # Handle health check response
+                await health_monitor.handle_health_pong(data)
                 continue
 
             if msg_type == "response":

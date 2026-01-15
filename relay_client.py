@@ -10,8 +10,11 @@ import json
 import os
 import sys
 import argparse
+import subprocess
 import threading
 import queue
+import time
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 from typing import Dict, Set, Optional
 
@@ -58,6 +61,137 @@ except ImportError:
     pass
 
 
+class NonBlockingTerminalManager:
+    """Manages non-blocking terminal execution to prevent WebSocket event loop blocking."""
+
+    def __init__(self):
+        self.executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="terminal")
+        self.active_sessions = {}
+
+    async def execute_command_async(self, session: 'TerminalSession', command: str) -> dict:
+        """Execute terminal command without blocking main event loop"""
+        loop = asyncio.get_event_loop()
+
+        try:
+            # Run terminal command in thread pool to avoid blocking
+            result = await loop.run_in_executor(
+                self.executor,
+                self._execute_command_sync,
+                session,
+                command
+            )
+            return result
+        except Exception as e:
+            return {
+                "type": "output",
+                "text": f"\n[Error executing command]: {e}\n$ ",
+                "cwd": session.cwd,
+                "exit_code": -1
+            }
+
+    def _execute_command_sync(self, session: 'TerminalSession', command: str) -> dict:
+        """Synchronous command execution (runs in thread pool)"""
+        try:
+            if os.name == 'nt':
+                # Windows: use cmd /c for better compatibility
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=session.cwd,
+                    env={**os.environ, "PYTHONIOENCODING": "utf-8"}
+                )
+            else:
+                # Unix
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=session.cwd
+                )
+
+            output = ""
+            if result.stdout:
+                output += result.stdout
+            if result.stderr:
+                output += result.stderr
+            if not output:
+                output = ""
+
+            return {
+                "type": "output",
+                "text": f"\n{output}\n$ " if output else "\n$ ",
+                "cwd": session.cwd,
+                "exit_code": result.returncode
+            }
+
+        except subprocess.TimeoutExpired:
+            return {
+                "type": "output",
+                "text": "\n[Command timed out after 30 seconds]\n$ ",
+                "cwd": session.cwd,
+                "exit_code": -1
+            }
+        except Exception as e:
+            return {
+                "type": "output",
+                "text": f"\n[Command error]: {e}\n$ ",
+                "cwd": session.cwd,
+                "exit_code": -1
+            }
+
+    def shutdown(self):
+        """Shutdown the thread pool executor"""
+        self.executor.shutdown(wait=True)
+
+class SmartReconnectionManager:
+    """Manages intelligent reconnection with exponential backoff and jitter."""
+
+    def __init__(self):
+        self.base_delay = 2.0
+        self.max_delay = 60.0
+        self.consecutive_failures = 0
+        self.successful_connections = 0
+
+    def get_reconnect_delay(self) -> float:
+        """Calculate smart reconnection delay with exponential backoff and jitter"""
+        if self.consecutive_failures == 0:
+            return self.base_delay
+
+        # Exponential backoff with 1.5x multiplier (gentler than 2x)
+        delay = min(
+            self.base_delay * (1.5 ** self.consecutive_failures),
+            self.max_delay
+        )
+
+        # Add random jitter (±20%) to prevent thundering herd
+        import random
+        jitter = delay * 0.2 * (random.random() - 0.5)
+        final_delay = max(1.0, delay + jitter)
+
+        return final_delay
+
+    def on_connection_success(self):
+        """Reset backoff on successful connection"""
+        self.consecutive_failures = 0
+        self.successful_connections += 1
+        print(f"[RECONNECT] Connection successful (total: {self.successful_connections})")
+
+    def on_connection_failure(self, error: str):
+        """Increment failure count and log attempt"""
+        self.consecutive_failures += 1
+        delay = self.get_reconnect_delay()
+        print(f"[RECONNECT] Connection failed (attempt #{self.consecutive_failures}): {error}")
+        print(f"[RECONNECT] Retrying in {delay:.1f} seconds...")
+        return delay
+
+# Global non-blocking terminal manager
+terminal_manager = NonBlockingTerminalManager()
+
 class TerminalSession:
     """Manages an interactive terminal session."""
 
@@ -85,8 +219,8 @@ class TerminalSession:
             "cwd": self.cwd
         })
 
-    def execute(self, command: str) -> None:
-        """Execute a command and queue the output."""
+    async def execute(self, command: str) -> None:
+        """Execute a command and queue the output (non-blocking)."""
         if not self.running:
             return
 
@@ -137,56 +271,15 @@ class TerminalSession:
                 })
             return
 
-        # Execute command in subprocess
+        # Execute command using non-blocking terminal manager
         try:
-            if os.name == 'nt':
-                # Windows: use cmd /c for better compatibility
-                result = subprocess.run(
-                    command,
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                    cwd=self.cwd,
-                    env={**os.environ, "PYTHONIOENCODING": "utf-8"}
-                )
-            else:
-                # Unix
-                result = subprocess.run(
-                    command,
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                    cwd=self.cwd
-                )
-
-            output = ""
-            if result.stdout:
-                output += result.stdout
-            if result.stderr:
-                output += result.stderr
-            if not output:
-                output = ""
-
-            self.output_queue.put({
-                "type": "output",
-                "text": f"\n{output}\n$ " if output else "\n$ ",
-                "cwd": self.cwd,
-                "exit_code": result.returncode
-            })
-
-        except subprocess.TimeoutExpired:
-            self.output_queue.put({
-                "type": "output",
-                "text": "\n[Command timed out after 30 seconds]\n$ ",
-                "cwd": self.cwd,
-                "exit_code": -1
-            })
+            # Use the global terminal manager for non-blocking execution
+            result = await terminal_manager.execute_command_async(self, command)
+            self.output_queue.put(result)
         except Exception as e:
             self.output_queue.put({
                 "type": "output",
-                "text": f"\n[Error: {e}]\n$ ",
+                "text": f"\n[Async Error: {e}]\n$ ",
                 "cwd": self.cwd,
                 "exit_code": -1
             })
@@ -225,6 +318,7 @@ class RelayClient:
         self.running = False
         self.active_streams: Dict[str, asyncio.Task] = {}  # window_id -> capture task
         self.stream_options: Dict[str, dict] = {}  # window_id -> {fps, quality, max_width}
+        self.reconnection_manager = SmartReconnectionManager()
         self.terminal_sessions: Dict[str, TerminalSession] = {}  # session_id -> TerminalSession
 
         # Host identification for multi-host support
@@ -737,14 +831,20 @@ Always use backslashes for Windows paths."""
             print(f"Stopped stream for window {window_id}")
 
     async def _capture_loop(self, window_id: str, fps: int, quality: int, max_width: int):
-        """Capture and stream frames."""
+        """Capture and stream frames (non-blocking)."""
         interval = 1.0 / fps
         hwnd = int(window_id)
         seq = 0
 
         while True:
             try:
-                result = WindowCapture.capture_window(hwnd, quality=quality, max_width=max_width)
+                # Use thread pool for non-blocking window capture
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None,  # Default executor
+                    WindowCapture.capture_window,
+                    hwnd, quality, max_width
+                )
 
                 if result is None:
                     await self.send_stream_error(window_id, "Window not available")
@@ -784,6 +884,25 @@ Always use backslashes for Windows paths."""
                 })
             except:
                 pass
+
+    async def handle_health_ping(self, data: dict):
+        """Respond to health ping from relay server"""
+        ping_id = data.get("ping_id")
+        server_timestamp = data.get("timestamp", 0)
+        current_time = time.time()
+
+        if self.ws:
+            try:
+                await self.ws.send_json({
+                    "type": "health_pong",
+                    "ping_id": ping_id,
+                    "server_timestamp": server_timestamp,
+                    "client_timestamp": current_time,
+                    "latency": (current_time - server_timestamp) * 1000
+                })
+                print(f"[HEALTH] Responded to ping {ping_id}")
+            except Exception as e:
+                print(f"[HEALTH] Failed to respond to ping: {e}")
 
     async def stop_all_streams(self):
         """Stop all active streams."""
@@ -825,9 +944,8 @@ Always use backslashes for Windows paths."""
                 "text": command + "\n"
             })
 
-            # Execute in thread to not block
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, session.execute, command)
+            # Execute using the new non-blocking method
+            await session.execute(command)
 
             # Send output
             await self._flush_terminal_output(session_id)
@@ -1099,6 +1217,9 @@ Always use backslashes for Windows paths."""
                         self.ws = ws
                         print("Connected to relay server!")
 
+                        # Reset reconnection backoff on successful connection
+                        self.reconnection_manager.on_connection_success()
+
                         # Send host registration
                         await ws.send_json({
                             "type": "host_register",
@@ -1138,6 +1259,10 @@ Always use backslashes for Windows paths."""
                                         "request_id": request_id,
                                         "data": result
                                     })
+
+                                elif msg_type == "health_ping":
+                                    # Respond to health check ping from relay server
+                                    await self.handle_health_ping(data)
 
                                 elif msg_type == "stream_start":
                                     # Start streaming a window
@@ -1297,17 +1422,18 @@ Always use backslashes for Windows paths."""
                                 break
 
                 except aiohttp.ClientError as e:
-                    print(f"Connection error: {e}")
+                    # Connection successful initially, then failed
+                    delay = self.reconnection_manager.on_connection_failure(f"Connection error: {e}")
                 except Exception as e:
-                    print(f"Error: {e}")
+                    # Connection failed with general error
+                    delay = self.reconnection_manager.on_connection_failure(f"General error: {e}")
 
                 # Stop all streams and terminals on disconnect
                 await self.stop_all_streams()
                 await self.stop_all_terminals()
 
                 if self.running:
-                    print("Reconnecting in 5 seconds...")
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(delay)
 
     async def run(self):
         """Run the relay client."""
