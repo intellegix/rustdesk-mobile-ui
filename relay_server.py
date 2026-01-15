@@ -462,7 +462,7 @@ async def relay_to_pc_reliable(endpoint: str, method: str = "GET", data: dict = 
             print(f"[RETRY] Attempt {attempt + 1} failed for {endpoint}, retrying in {delay}s")
             await asyncio.sleep(delay)
 
-async def relay_to_pc_deduplicated(endpoint: str, method: str = "GET", data: dict = None) -> dict:
+async def relay_to_pc(endpoint: str, method: str = "GET", data: dict = None) -> dict:
     """Relay a request to the connected PC."""
     global pc_connection, pending_requests
 
