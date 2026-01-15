@@ -835,12 +835,28 @@ async def pc_websocket(websocket: WebSocket):
                         pass
 
             elif msg_type == "stream_frame":
-                # Forward stream frame to all web clients
+                # Forward stream frame to all web clients with frame dropping
+                MAX_PENDING_FRAMES = 3  # Drop frames if client queue > 3
+
                 for wc in web_connections:
                     try:
+                        # Check if client has too many pending frames
+                        if hasattr(wc, '_pending_frames'):
+                            if wc._pending_frames >= MAX_PENDING_FRAMES:
+                                print(f"[FRAME-DROP] Client queue full ({wc._pending_frames} frames), dropping frame")
+                                continue  # Skip this frame for this client
+                        else:
+                            wc._pending_frames = 0
+
+                        # Track pending frame
+                        wc._pending_frames += 1
                         await wc.send_json(data)
+                        # Frame sent successfully, decrement counter
+                        wc._pending_frames = max(0, wc._pending_frames - 1)
                     except:
-                        pass
+                        # Reset counter on error
+                        if hasattr(wc, '_pending_frames'):
+                            wc._pending_frames = 0
 
             elif msg_type == "stream_error":
                 # Forward stream error to all web clients

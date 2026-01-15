@@ -4562,7 +4562,7 @@
                         type: 'stream_start',
                         window_id: windowId,
                         options: {
-                            fps: isTerminal ? 10 : 15,  // Higher FPS for smoother display
+                            fps: isTerminal ? 20 : 30,  // Optimized FPS for reduced lag (was 10:15)
                             quality: 70,  // Lower quality for faster encoding (still readable)
                             max_width: 1000  // Smaller max width for faster transfer
                         }
@@ -4639,9 +4639,17 @@
                 document.getElementById('stream-loading').style.display = 'none';
                 document.getElementById('stream-error').classList.remove('show');
 
+                // Skip frame rendering if previous frame still processing (prevents queue buildup)
+                if (this.isRendering) {
+                    console.log('[FRAME-DROP] Client-side frame dropped - previous frame still rendering');
+                    return;
+                }
+
                 // Create image from base64
                 const img = new Image();
                 img.onload = () => {
+                    this.isRendering = true; // Block new frames
+
                     // Account for high-DPI displays (Retina, etc.)
                     const dpr = window.devicePixelRatio || 1;
                     const container = document.getElementById('stream-container');
@@ -4657,8 +4665,11 @@
                     this.canvas.style.width = containerWidth + 'px';
                     this.canvas.style.height = displayHeight + 'px';
 
-                    // Draw at high resolution
-                    this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                    // Draw at high resolution using requestAnimationFrame for smooth rendering
+                    requestAnimationFrame(() => {
+                        this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                        this.isRendering = false; // Allow next frame
+                    });
                 };
                 img.src = 'data:image/jpeg;base64,' + data.frame;
 
@@ -4773,6 +4784,15 @@
             }
 
             sendRemoteScroll(deltaX, deltaY) {
+                // Throttle scroll events to prevent input flooding (max 25/sec = 40ms interval)
+                const now = Date.now();
+                if (!this.lastScrollTime) this.lastScrollTime = 0;
+                if (now - this.lastScrollTime < 40) {
+                    console.log(`[SCROLL-THROTTLE] Dropped scroll event (too fast: ${now - this.lastScrollTime}ms)`);
+                    return; // Drop this scroll event
+                }
+                this.lastScrollTime = now;
+
                 console.log(`[SCROLL-DEBUG] sendRemoteScroll called: deltaX=${deltaX}, deltaY=${deltaY}`);
                 console.log(`[SCROLL-DEBUG] WebSocket state: ${ws ? ws.readyState : 'null'}`);
                 console.log(`[SCROLL-DEBUG] Current window ID: ${this.currentWindowId}`);
