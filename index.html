@@ -4515,6 +4515,8 @@
                 this.currentFps = 0;
                 this.streamActive = false;
                 this.gestureHandler = null;
+                this.isRendering = false;        // FIX: Initialize frame rendering flag
+                this.lastScrollTime = 0;         // FIX: Initialize scroll throttling timestamp
             }
 
             async openStream(windowId, windowTitle, windowClass) {
