@@ -1427,6 +1427,9 @@ Always use backslashes for Windows paths."""
                 except Exception as e:
                     # Connection failed with general error
                     delay = self.reconnection_manager.on_connection_failure(f"General error: {e}")
+                else:
+                    # Connection closed normally (not through exception)
+                    delay = self.reconnection_manager.on_connection_failure("Connection closed")
 
                 # Stop all streams and terminals on disconnect
                 await self.stop_all_streams()
