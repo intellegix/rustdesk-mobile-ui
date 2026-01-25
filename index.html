@@ -5991,6 +5991,27 @@
 
             // Periodic refresh
             setInterval(loadSystemInfo, 30000);
+
+            // Deployment verification function
+            async function checkDeploymentStatus() {
+                try {
+                    const response = await fetch('/api/deployment-info');
+                    const info = await response.json();
+                    console.log('🚀 Deployment Info:', info);
+
+                    // Show in UI if this is a new deployment
+                    const lastCommit = localStorage.getItem('lastKnownCommit');
+                    if (lastCommit !== info.commit_hash) {
+                        showToast(`Deployed: ${info.commit_hash}`, 'git-commit');
+                        localStorage.setItem('lastKnownCommit', info.commit_hash);
+                    }
+                } catch (e) {
+                    console.log('Deployment info not available:', e);
+                }
+            }
+
+            // Call deployment check on page load
+            checkDeploymentStatus();
         });
     </script>
 

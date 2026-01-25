@@ -361,6 +361,46 @@ async def relay_status():
     }
 
 
+@app.get("/api/deployment-info")
+async def deployment_info():
+    """Show deployment status and git commit info."""
+    try:
+        import subprocess
+        import datetime
+
+        # Get current git commit hash
+        commit_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=os.path.dirname(__file__),
+            text=True
+        ).strip()[:8]
+
+        # Get commit message
+        commit_msg = subprocess.check_output(
+            ["git", "log", "-1", "--pretty=%s"],
+            cwd=os.path.dirname(__file__),
+            text=True
+        ).strip()
+
+        # Get last modified time of index.html
+        index_path = os.path.join(os.path.dirname(__file__), "index.html")
+        if os.path.exists(index_path):
+            mtime = os.path.getmtime(index_path)
+            html_modified = datetime.datetime.fromtimestamp(mtime).isoformat()
+        else:
+            html_modified = "not found"
+
+        return {
+            "commit_hash": commit_hash,
+            "commit_message": commit_msg,
+            "html_last_modified": html_modified,
+            "deployment_time": datetime.datetime.now().isoformat(),
+            "environment": "render" if os.environ.get("RENDER") else "local"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/api/hosts")
 async def list_hosts():
     """List all connected host PCs."""
