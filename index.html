@@ -1244,6 +1244,7 @@
             overflow-y: auto;
             overflow-x: hidden;
             background: #000;
+            min-height: 40vh; /* Ensure minimum height even with large keyboard */
             position: relative;
             -webkit-overflow-scrolling: touch;
         }
@@ -1434,6 +1435,63 @@
 
         .arrow-spacer {
             /* Empty grid spaces */
+        }
+
+        /* Floating Arrow Key Overlay */
+        .floating-arrows {
+            position: fixed;
+            bottom: 80px;  /* Above footer */
+            right: 16px;
+            z-index: 100;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 4px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease;
+        }
+
+        .floating-arrows .arrow-key {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            opacity: 0.9;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-arrows .arrow-key:hover,
+        .floating-arrows .arrow-key:active {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .floating-arrows .up {
+            grid-column: 1 / 3;  /* Span both columns */
+            grid-row: 1;
+        }
+
+        .floating-arrows .down {
+            grid-column: 1 / 3;  /* Span both columns */
+            grid-row: 2;
+        }
+
+        .floating-arrows .left {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .floating-arrows .right {
+            grid-column: 2;
+            grid-row: 3;
         }
 
         .browser-nav-row {
@@ -1638,11 +1696,13 @@
         .terminal-keyboard {
             display: none;
             flex-direction: column;
-            padding: 12px 16px;
+            padding: 4px 12px;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
-            gap: 10px;
+            gap: 4px;
             flex-shrink: 0;
+            max-height: 35vh; /* Limit keyboard to 35% of viewport height */
+            overflow-y: auto;
         }
 
         .terminal-keyboard.show {
@@ -1657,12 +1717,12 @@
 
         .tab-btn {
             flex: 1;
-            height: 44px;
-            border-radius: 8px;
+            height: 36px;
+            border-radius: 6px;
             background: var(--bg-elevated);
             border: 2px solid var(--accent-orange);
             color: var(--accent-orange);
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             cursor: pointer;
             font-family: 'JetBrains Mono', monospace;
@@ -1841,27 +1901,105 @@
         }
 
         .claude-section-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             padding-left: 2px;
+            margin-bottom: 3px;
+        }
+
+        /* Claude Option Row (Numbers 1-5) */
+        .claude-option-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .claude-option-btn {
+            flex: 1;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--bg-elevated);
+            border: 2px solid #3B82F6;
+            color: #3B82F6;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .claude-option-btn:active {
+            transform: scale(0.92);
+            background: #3B82F6;
+            color: white;
+        }
+
+        /* Collapsible sections */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .section-toggle {
+            width: 20px;
+            height: 20px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .section-toggle:active {
+            transform: scale(0.9);
+        }
+
+        .section-toggle svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .section-toggle.collapsed {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+            max-height: 200px;
+            opacity: 1;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
         }
 
         .terminal-input-row {
             display: flex;
-            gap: 10px;
+            gap: 6px;
+            margin-bottom: 2px;
         }
 
         .term-input {
             flex: 1;
-            padding: 14px 16px;
+            padding: 10px 12px;
             background: #0d1117;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             color: #58a6ff;
-            font-size: 15px;
+            font-size: 14px;
             font-family: 'JetBrains Mono', monospace;
             outline: none;
         }
@@ -1875,10 +2013,11 @@
         }
 
         .term-send {
-            width: 50px;
+            width: 40px;
+            height: 36px;
             background: var(--accent-orange);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             color: white;
             cursor: pointer;
             display: flex;
@@ -1897,10 +2036,11 @@
 
         .term-clear-local,
         .term-clear-remote {
-            width: 44px;
+            width: 36px;
+            height: 36px;
             background: var(--bg-elevated);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
@@ -1929,10 +2069,11 @@
         }
 
         .term-upload {
-            width: 44px;
+            width: 36px;
+            height: 36px;
             background: rgba(34, 197, 94, 0.15);
             border: 1px solid #22C55E;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #22C55E;
             cursor: pointer;
             display: flex;
@@ -1953,10 +2094,11 @@
         }
 
         .term-voice {
-            width: 44px;
+            width: 36px;
+            height: 36px;
             background: rgba(59, 130, 246, 0.15);
             border: 1px solid #3B82F6;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #3B82F6;
             cursor: pointer;
             display: flex;
@@ -2160,17 +2302,17 @@
 
         .claude-menu-btn {
             flex: 1;
-            height: 48px;
-            border-radius: 10px;
+            height: 38px;
+            border-radius: 8px;
             border: 2px solid;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 1px;
             transition: all 0.15s ease;
         }
 
@@ -2263,10 +2405,10 @@
 
         /* Compact button variant */
         .claude-menu-btn.compact {
-            height: 40px;
+            height: 32px;
         }
         .claude-menu-btn.compact .btn-key {
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .stream-action.claude-btn {
@@ -2282,40 +2424,66 @@
         /* Landscape mode - compact UI */
         @media (orientation: landscape) {
             .stream-header {
-                padding: 8px 16px;
+                padding: 6px 12px;
             }
             .stream-back {
-                width: 40px;
-                height: 40px;
+                width: 36px;
+                height: 36px;
             }
             .stream-title {
-                font-size: 14px;
+                font-size: 13px;
             }
             .stream-type-badge {
                 display: none;
             }
             .stream-footer {
-                padding: 8px 12px;
-                gap: 6px;
-                padding-bottom: calc(8px + var(--safe-area-bottom));
+                padding: 6px 10px;
+                gap: 4px;
+                padding-bottom: calc(6px + var(--safe-area-bottom));
             }
             .stream-action {
-                padding: 10px 8px;
-                min-width: 56px;
+                padding: 8px 6px;
+                min-width: 48px;
             }
             .stream-action svg {
-                width: 20px;
-                height: 20px;
+                width: 18px;
+                height: 18px;
             }
             .stream-action-label {
                 display: none;
             }
             .browser-controls {
-                padding: 8px 12px;
+                padding: 6px 10px;
             }
             .browser-nav-btn {
-                width: 40px;
-                height: 40px;
+                width: 36px;
+                height: 36px;
+            }
+            /* Compact terminal keyboard in landscape */
+            .terminal-keyboard {
+                padding: 2px 8px;
+                gap: 2px;
+                max-height: 25vh;
+            }
+            .tab-btn {
+                height: 28px;
+                font-size: 14px;
+            }
+            .claude-option-btn {
+                height: 26px;
+                font-size: 13px;
+            }
+            .term-input {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+            .term-send,
+            .term-clear-local,
+            .term-clear-remote,
+            .term-upload,
+            .term-voice {
+                width: 32px;
+                height: 32px;
             }
         }
 
@@ -2323,16 +2491,33 @@
         @media (max-width: 400px) {
             .browser-controls {
                 flex-wrap: wrap;
-                padding: 10px 12px;
+                padding: 8px 10px;
             }
             .browser-url-container {
                 width: 100%;
                 order: 1;
-                margin-top: 10px;
+                margin-top: 8px;
             }
             .browser-nav-btn {
-                width: 48px;
-                height: 48px;
+                width: 42px;
+                height: 42px;
+            }
+            /* Extra compact terminal keyboard for small screens */
+            .terminal-keyboard {
+                padding: 2px 8px;
+                gap: 2px;
+                max-height: 30vh;
+            }
+            .claude-section-label {
+                font-size: 8px;
+            }
+            .section-toggle {
+                width: 18px;
+                height: 18px;
+            }
+            .section-toggle svg {
+                width: 10px;
+                height: 10px;
             }
         }
 
@@ -2964,29 +3149,36 @@
         <div class="terminal-keyboard" id="terminal-keyboard">
             <!-- Terminal Tabs Row -->
             <div class="claude-actions-section">
-                <div class="claude-section-label">Terminal Tabs (Ctrl+Alt+#)</div>
-                <div class="terminal-tab-switcher">
-                    <button class="tab-btn" data-tab="1" title="Ctrl+Alt+1">1</button>
-                    <button class="tab-btn" data-tab="2" title="Ctrl+Alt+2">2</button>
-                    <button class="tab-btn" data-tab="3" title="Ctrl+Alt+3">3</button>
-                    <button class="tab-btn" data-tab="4" title="Ctrl+Alt+4">4</button>
-                    <button class="tab-btn" data-tab="5" title="Ctrl+Alt+5">5</button>
-                    <button class="tab-btn" data-tab="6" title="Ctrl+Alt+6">6</button>
-                    <button class="tab-btn tab-new" id="tab-new" title="Recent directories">
-                        <i data-lucide="folder-open"></i>
-                    </button>
-                    <button class="tab-btn tab-close" id="tab-close" title="Close current terminal (Ctrl+D)">
-                        <i data-lucide="x"></i>
+                <div class="section-header">
+                    <div class="claude-section-label">Terminal Tabs (Ctrl+Alt+#)</div>
+                    <button class="section-toggle" id="tabs-toggle" title="Toggle tabs section">
+                        <i data-lucide="chevron-up"></i>
                     </button>
                 </div>
-            </div>
-            <!-- Claude Option Selection Row -->
-            <div class="claude-option-row">
-                <button class="claude-option-btn" data-option="1" title="Claude Option 1">1</button>
-                <button class="claude-option-btn" data-option="2" title="Claude Option 2">2</button>
-                <button class="claude-option-btn" data-option="3" title="Claude Option 3">3</button>
-                <button class="claude-option-btn" data-option="4" title="Claude Option 4">4</button>
-                <button class="claude-option-btn" data-option="5" title="Claude Option 5">5</button>
+                <div class="collapsible-content" id="tabs-content">
+                    <div class="terminal-tab-switcher">
+                        <button class="tab-btn" data-tab="1" title="Ctrl+Alt+1">1</button>
+                        <button class="tab-btn" data-tab="2" title="Ctrl+Alt+2">2</button>
+                        <button class="tab-btn" data-tab="3" title="Ctrl+Alt+3">3</button>
+                        <button class="tab-btn" data-tab="4" title="Ctrl+Alt+4">4</button>
+                        <button class="tab-btn" data-tab="5" title="Ctrl+Alt+5">5</button>
+                        <button class="tab-btn" data-tab="6" title="Ctrl+Alt+6">6</button>
+                        <button class="tab-btn tab-new" id="tab-new" title="Recent directories">
+                            <i data-lucide="folder-open"></i>
+                        </button>
+                        <button class="tab-btn tab-close" id="tab-close" title="Close current terminal (Ctrl+D)">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <!-- Claude Option Selection Row -->
+                    <div class="claude-option-row">
+                        <button class="claude-option-btn" data-option="1" title="Claude Option 1">1</button>
+                        <button class="claude-option-btn" data-option="2" title="Claude Option 2">2</button>
+                        <button class="claude-option-btn" data-option="3" title="Claude Option 3">3</button>
+                        <button class="claude-option-btn" data-option="4" title="Claude Option 4">4</button>
+                        <button class="claude-option-btn" data-option="5" title="Claude Option 5">5</button>
+                    </div>
+                </div>
             </div>
             <!-- Recent Directories Dialog -->
             <div class="recent-dirs-dialog" id="recent-dirs-dialog">
@@ -2996,26 +3188,6 @@
                 </div>
             </div>
 
-            <!-- Arrow Keys Section -->
-            <div class="arrow-keys-section">
-                <div class="claude-section-label">Navigation Keys</div>
-                <div class="arrow-keys-grid">
-                    <div class="arrow-spacer"></div>
-                    <button class="arrow-key up" id="arrow-up" title="Arrow Up">
-                        <i data-lucide="arrow-up"></i>
-                    </button>
-                    <div class="arrow-spacer"></div>
-                    <button class="arrow-key left" id="arrow-left" title="Arrow Left">
-                        <i data-lucide="arrow-left"></i>
-                    </button>
-                    <button class="arrow-key down" id="arrow-down" title="Arrow Down">
-                        <i data-lucide="arrow-down"></i>
-                    </button>
-                    <button class="arrow-key right" id="arrow-right" title="Arrow Right">
-                        <i data-lucide="arrow-right"></i>
-                    </button>
-                </div>
-            </div>
 
             <div class="terminal-input-row">
                 <button class="term-clear-local" id="term-clear-local" title="Clear input">
@@ -5035,6 +5207,27 @@
                     claudeMenu.classList.remove('show');
                 });
 
+                // Floating Arrow Navigation buttons
+                document.getElementById('floating-arrow-up')?.addEventListener('click', () => {
+                    sendTerminalKey('ArrowUp', {});
+                    showToast('↑ Arrow Up', 'arrow-up');
+                });
+
+                document.getElementById('floating-arrow-down')?.addEventListener('click', () => {
+                    sendTerminalKey('ArrowDown', {});
+                    showToast('↓ Arrow Down', 'arrow-down');
+                });
+
+                document.getElementById('floating-arrow-left')?.addEventListener('click', () => {
+                    sendTerminalKey('ArrowLeft', {});
+                    showToast('← Arrow Left', 'arrow-left');
+                });
+
+                document.getElementById('floating-arrow-right')?.addEventListener('click', () => {
+                    sendTerminalKey('ArrowRight', {});
+                    showToast('→ Arrow Right', 'arrow-right');
+                });
+
                 // Input control buttons
                 document.getElementById('cm-enter')?.addEventListener('click', () => {
                     sendTerminalKey('Enter', {});
@@ -5576,6 +5769,26 @@
                 });
             });
 
+            // Collapsible sections
+            const tabsToggle = document.getElementById('tabs-toggle');
+            const tabsContent = document.getElementById('tabs-content');
+
+            if (tabsToggle && tabsContent) {
+                tabsToggle.addEventListener('click', () => {
+                    const isCollapsed = tabsContent.classList.contains('collapsed');
+
+                    if (isCollapsed) {
+                        // Expand
+                        tabsContent.classList.remove('collapsed');
+                        tabsToggle.classList.remove('collapsed');
+                    } else {
+                        // Collapse
+                        tabsContent.classList.add('collapsed');
+                        tabsToggle.classList.add('collapsed');
+                    }
+                });
+            }
+
             console.log('[SETUP] Terminal keyboard setup complete');
         }
 
@@ -5780,5 +5993,22 @@
             setInterval(loadSystemInfo, 30000);
         });
     </script>
+
+    <!-- Floating Arrow Key Overlay -->
+    <div class="floating-arrows" id="floating-arrows">
+        <button class="arrow-key up" id="floating-arrow-up" title="Arrow Up">
+            <i data-lucide="arrow-up"></i>
+        </button>
+        <button class="arrow-key down" id="floating-arrow-down" title="Arrow Down">
+            <i data-lucide="arrow-down"></i>
+        </button>
+        <button class="arrow-key left" id="floating-arrow-left" title="Arrow Left">
+            <i data-lucide="arrow-left"></i>
+        </button>
+        <button class="arrow-key right" id="floating-arrow-right" title="Arrow Right">
+            <i data-lucide="arrow-right"></i>
+        </button>
+    </div>
+
 </body>
 </html>
