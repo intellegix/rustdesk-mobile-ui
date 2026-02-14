@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
@@ -54,13 +54,13 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            padding: 0 16px;
+            padding: 0 12px;
             padding-bottom: var(--safe-area-bottom);
         }
 
         /* Header */
         .header {
-            padding: 20px 0;
+            padding: 12px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -70,11 +70,11 @@
         .header-left {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .header-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -229,25 +229,25 @@
         /* Navigation Tabs */
         .nav-tabs {
             display: flex;
-            gap: 8px;
-            padding: 8px 0;
-            margin-bottom: 16px;
+            gap: 6px;
+            padding: 4px 0;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
         .nav-tab {
             flex: 1;
-            padding: 14px 16px;
+            padding: 10px 12px;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 12px;
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 9px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -263,8 +263,8 @@
         }
 
         .nav-tab svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
 
         /* Scrollable Content Area */
@@ -2786,6 +2786,324 @@
         .double-tap-hint.show {
             opacity: 1;
         }
+
+        /* ========== NATIVE KEYBOARD DETECTION ========== */
+        .native-kb-open .terminal-keyboard { max-height: 15vh; }
+        .native-kb-open .stream-container { min-height: 30vh; }
+        .native-kb-open .collapsible-content { max-height: 0; opacity: 0; }
+        .native-kb-open .section-toggle { transform: rotate(180deg); }
+
+        /* ========== QUICK ACTION RIBBON ========== */
+        .quick-ribbon {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
+            align-items: center;
+            scrollbar-width: none;
+        }
+        .quick-ribbon::-webkit-scrollbar { display: none; }
+
+        .qr-btn {
+            min-width: 32px;
+            height: 28px;
+            padding: 0 8px;
+            border-radius: 6px;
+            border: 1.5px solid;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-family: 'JetBrains Mono', monospace;
+            transition: transform 0.1s, background 0.1s;
+        }
+        .qr-btn:active { transform: scale(0.9); }
+
+        .qr-btn.yes { background: rgba(34, 197, 94, 0.15); border-color: #22C55E; color: #22C55E; }
+        .qr-btn.yes:active { background: #22C55E; color: white; }
+        .qr-btn.no { background: rgba(239, 68, 68, 0.15); border-color: #EF4444; color: #EF4444; }
+        .qr-btn.no:active { background: #EF4444; color: white; }
+        .qr-btn.enter { background: rgba(139, 92, 246, 0.15); border-color: #8B5CF6; color: #8B5CF6; }
+        .qr-btn.enter:active { background: #8B5CF6; color: white; }
+        .qr-btn.cancel { background: rgba(239, 68, 68, 0.15); border-color: #EF4444; color: #EF4444; }
+        .qr-btn.cancel:active { background: #EF4444; color: white; }
+        .qr-btn.option { background: rgba(59, 130, 246, 0.15); border-color: #3B82F6; color: #3B82F6; }
+        .qr-btn.option:active { background: #3B82F6; color: white; }
+        .qr-btn.tab-toggle { background: rgba(249, 115, 22, 0.15); border-color: #F97316; color: #F97316; }
+        .qr-btn.tab-toggle:active { background: #F97316; color: white; }
+        .qr-btn.skip { background: rgba(249, 115, 22, 0.15); border-color: #F97316; color: #F97316; }
+        .qr-btn.skip:active { background: #F97316; color: white; }
+        .qr-btn.esc { background: rgba(107, 114, 128, 0.15); border-color: #6B7280; color: #9CA3AF; }
+        .qr-btn.esc:active { background: #6B7280; color: white; }
+        .qr-btn.tab-key { background: rgba(6, 182, 212, 0.15); border-color: #06B6D4; color: #06B6D4; }
+        .qr-btn.tab-key:active { background: #06B6D4; color: white; }
+
+        .qr-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border-color);
+            flex-shrink: 0;
+            margin: 0 2px;
+        }
+
+        /* ========== STREAM SLIDE-UP ANIMATION ========== */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(100%); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stream-overlay.active {
+            animation: slideUp 0.25s ease-out;
+        }
+        .terminal-keyboard.show {
+            animation: slideUp 0.2s ease-out;
+        }
+
+        /* ========== TAP INDICATOR ========== */
+        .tap-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(249, 115, 22, 0.6);
+            border: 2px solid rgba(249, 115, 22, 0.9);
+            pointer-events: none;
+            z-index: 2200;
+            transform: translate(-50%, -50%);
+            animation: tapFade 0.3s ease-out forwards;
+        }
+        @keyframes tapFade {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+
+        /* ========== CONNECTION STATUS COLORS ========== */
+        .status-dot.warning {
+            background: #F59E0B;
+            animation: pulse 1.5s infinite;
+        }
+        .status-dot.reconnecting {
+            background: #F97316;
+            animation: pulse 0.8s infinite;
+        }
+
+        .reconnect-banner {
+            display: none;
+            padding: 8px 16px;
+            background: rgba(249, 115, 22, 0.15);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 12px;
+            color: #F97316;
+            margin: 4px 0;
+        }
+        .reconnect-banner.show { display: block; }
+        .reconnect-banner .progress-bar {
+            height: 2px;
+            background: #F97316;
+            border-radius: 1px;
+            margin-top: 4px;
+            transition: width 0.3s;
+        }
+
+        /* ========== LANDSCAPE SIDE-PANEL KEYBOARD ========== */
+        @media (orientation: landscape) {
+            .stream-overlay.active {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .stream-header {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                padding: 4px 8px;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 10;
+                backdrop-filter: blur(4px);
+            }
+            .stream-container {
+                flex: 1;
+                min-width: 0;
+            }
+            .terminal-keyboard.show {
+                max-height: 100vh;
+                max-width: 40vw;
+                border-top: none;
+                border-left: 1px solid var(--border-color);
+                overflow-y: auto;
+            }
+            .stream-footer {
+                width: 100%;
+            }
+        }
+
+        /* ========== COMMAND PALETTE ========== */
+        .command-palette {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 60vh;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            border-radius: 16px 16px 0 0;
+            z-index: 3000;
+            flex-direction: column;
+            animation: slideUp 0.25s ease-out;
+        }
+        .command-palette.show { display: flex; }
+
+        .palette-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .palette-search {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            outline: none;
+        }
+        .palette-search:focus { border-color: var(--accent-orange); }
+        .palette-close {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .palette-section-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 16px 4px;
+        }
+        .palette-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: var(--safe-area-bottom);
+        }
+        .palette-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .palette-item:active { background: var(--bg-tertiary); }
+        .palette-item svg {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        /* ========== CHEAT SHEET OVERLAY ========== */
+        .cheat-sheet {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 4000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .cheat-sheet.show { display: flex; }
+
+        .cheat-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 360px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .cheat-title {
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .cheat-section {
+            margin-bottom: 12px;
+        }
+        .cheat-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .cheat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+        .cheat-key {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+        .cheat-desc {
+            color: var(--text-secondary);
+        }
+        .cheat-close {
+            margin-top: 16px;
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ========== FLOATING ARROW KEYS ========== */
+        .floating-arrows {
+            position: fixed;
+            bottom: 200px;
+            left: 16px;
+            display: none;
+            z-index: 2100;
+        }
+        .stream-overlay.active ~ .floating-arrows { display: grid; }
     </style>
 </head>
 <body>
@@ -2815,6 +3133,12 @@
                 </div>
             </div>
         </header>
+
+        <!-- Reconnection Banner -->
+        <div class="reconnect-banner" id="reconnect-banner">
+            Reconnecting... <span id="reconnect-attempt">(attempt 1/10)</span>
+            <div class="progress-bar" id="reconnect-progress" style="width: 10%"></div>
+        </div>
 
         <!-- Navigation Tabs -->
         <nav class="nav-tabs">
@@ -3044,6 +3368,7 @@
                 <span class="stream-type-badge generic" id="stream-type-badge">Generic</span>
             </div>
             <span class="stream-fps" id="stream-fps">-- FPS</span>
+            <button class="stream-back" id="stream-cheat" title="Shortcuts" style="width:32px;height:32px;font-size:14px;font-weight:700;margin-left:4px;">?</button>
         </header>
 
         <div class="stream-container" id="stream-container">
@@ -3147,15 +3472,28 @@
 
         <!-- Terminal Keyboard Controls (shown for terminal windows) -->
         <div class="terminal-keyboard" id="terminal-keyboard">
-            <!-- Terminal Tabs Row -->
+            <!-- Quick Action Ribbon (always visible) -->
+            <div class="quick-ribbon" id="quick-ribbon">
+                <button class="qr-btn yes" id="qr-yes" title="Yes">Y</button>
+                <button class="qr-btn no" id="qr-no" title="No">N</button>
+                <button class="qr-btn skip" id="qr-skip" title="Skip">S</button>
+                <button class="qr-btn enter" id="qr-enter" title="Enter">&#x21B5;</button>
+                <button class="qr-btn cancel" id="qr-cancel" title="Ctrl+C">^C</button>
+                <button class="qr-btn esc" id="qr-esc" title="Escape">Esc</button>
+                <button class="qr-btn tab-key" id="qr-tab" title="Tab">&#x21E5;</button>
+                <div class="qr-divider"></div>
+                <button class="qr-btn option" id="qr-opt-1" title="Option 1">1</button>
+                <button class="qr-btn option" id="qr-opt-2" title="Option 2">2</button>
+                <button class="qr-btn option" id="qr-opt-3" title="Option 3">3</button>
+                <button class="qr-btn option" id="qr-opt-4" title="Option 4">4</button>
+                <button class="qr-btn option" id="qr-opt-5" title="Option 5">5</button>
+                <div class="qr-divider"></div>
+                <button class="qr-btn tab-toggle" id="qr-tabs-toggle" title="Terminal Tabs">Tabs</button>
+            </div>
+
+            <!-- Collapsible Terminal Tabs Section -->
             <div class="claude-actions-section">
-                <div class="section-header">
-                    <div class="claude-section-label">Terminal Tabs (Ctrl+Alt+#)</div>
-                    <button class="section-toggle" id="tabs-toggle" title="Toggle tabs section">
-                        <i data-lucide="chevron-up"></i>
-                    </button>
-                </div>
-                <div class="collapsible-content" id="tabs-content">
+                <div class="collapsible-content collapsed" id="tabs-content">
                     <div class="terminal-tab-switcher">
                         <button class="tab-btn" data-tab="1" title="Ctrl+Alt+1">1</button>
                         <button class="tab-btn" data-tab="2" title="Ctrl+Alt+2">2</button>
@@ -3170,14 +3508,6 @@
                             <i data-lucide="x"></i>
                         </button>
                     </div>
-                    <!-- Claude Option Selection Row -->
-                    <div class="claude-option-row">
-                        <button class="claude-option-btn" data-option="1" title="Claude Option 1">1</button>
-                        <button class="claude-option-btn" data-option="2" title="Claude Option 2">2</button>
-                        <button class="claude-option-btn" data-option="3" title="Claude Option 3">3</button>
-                        <button class="claude-option-btn" data-option="4" title="Claude Option 4">4</button>
-                        <button class="claude-option-btn" data-option="5" title="Claude Option 5">5</button>
-                    </div>
                 </div>
             </div>
             <!-- Recent Directories Dialog -->
@@ -3188,7 +3518,7 @@
                 </div>
             </div>
 
-
+            <!-- Compact Input Row -->
             <div class="terminal-input-row">
                 <button class="term-clear-local" id="term-clear-local" title="Clear input">
                     <i data-lucide="x"></i>
@@ -3428,6 +3758,42 @@
         // Configuration
         const API_BASE = window.location.origin;
         let ws = null;
+        let wsLatency = 0;
+        let reconnectAttempt = 0;
+
+        // ========== HAPTIC FEEDBACK ==========
+        function haptic(type = 'light') {
+            if (!navigator.vibrate) return;
+            const patterns = { light: 10, medium: 25, heavy: 50, success: [10, 50, 10], error: [50, 30, 50] };
+            navigator.vibrate(patterns[type] || 10);
+        }
+
+        // ========== TAP INDICATOR ==========
+        function showTapIndicator(x, y) {
+            const indicator = document.createElement('div');
+            indicator.className = 'tap-indicator';
+            indicator.style.left = x + 'px';
+            indicator.style.top = y + 'px';
+            document.getElementById('stream-overlay').appendChild(indicator);
+            setTimeout(() => indicator.remove(), 300);
+        }
+
+        // ========== COMMAND PALETTE ==========
+        const RECENT_CMDS_KEY = 'rustdesk-recent-cmds';
+        const MAX_RECENT_CMDS = 10;
+
+        function addRecentCommand(cmd) {
+            if (!cmd || cmd.length < 2) return;
+            let cmds = JSON.parse(localStorage.getItem(RECENT_CMDS_KEY) || '[]');
+            cmds = cmds.filter(c => c !== cmd);
+            cmds.unshift(cmd);
+            cmds = cmds.slice(0, MAX_RECENT_CMDS);
+            localStorage.setItem(RECENT_CMDS_KEY, JSON.stringify(cmds));
+        }
+
+        function getRecentCommands() {
+            return JSON.parse(localStorage.getItem(RECENT_CMDS_KEY) || '[]');
+        }
 
         // Recent Directories Tracking
         const RECENT_DIRS_KEY = 'rustdesk-recent-dirs';
@@ -4029,6 +4395,37 @@
         // WebSocket for real-time updates
         let pcConnected = true; // Assume connected for local mode
 
+        let wsReconnectAttempt = 0;
+        const WS_MAX_RECONNECT = 10;
+        let wsPingInterval = null;
+        let wsConnectionState = 'disconnected'; // connected | slow | reconnecting | disconnected
+
+        function setConnectionState(state) {
+            wsConnectionState = state;
+            const dot = document.getElementById('status-dot');
+            const banner = document.getElementById('reconnect-banner');
+            if (dot) {
+                dot.classList.remove('warning', 'reconnecting', 'offline');
+                switch (state) {
+                    case 'connected': break;
+                    case 'slow': dot.classList.add('warning'); break;
+                    case 'reconnecting': dot.classList.add('reconnecting'); break;
+                    case 'disconnected': dot.classList.add('offline'); break;
+                }
+            }
+            if (banner) {
+                if (state === 'reconnecting') {
+                    banner.classList.add('show');
+                    const attempt = document.getElementById('reconnect-attempt');
+                    const progress = document.getElementById('reconnect-progress');
+                    if (attempt) attempt.textContent = `(attempt ${wsReconnectAttempt}/${WS_MAX_RECONNECT})`;
+                    if (progress) progress.style.width = `${(wsReconnectAttempt / WS_MAX_RECONNECT) * 100}%`;
+                } else {
+                    banner.classList.remove('show');
+                }
+            }
+        }
+
         function connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -4036,22 +4433,46 @@
 
             ws.onopen = () => {
                 console.log('WebSocket connected');
-                // Ping to keep alive
-                setInterval(() => {
+                wsReconnectAttempt = 0;
+                setConnectionState('connected');
+                // Ping to keep alive + measure latency
+                if (wsPingInterval) clearInterval(wsPingInterval);
+                wsPingInterval = setInterval(() => {
                     if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'ping' }));
+                        const t = Date.now();
+                        ws.send(JSON.stringify({ type: 'ping', t }));
                     }
                 }, 30000);
             };
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
+                // Detect latency from pong
+                if (data.type === 'pong' && data.t) {
+                    const latency = Date.now() - data.t;
+                    if (latency > 1000 && wsConnectionState === 'connected') {
+                        setConnectionState('slow');
+                    } else if (latency <= 1000 && wsConnectionState === 'slow') {
+                        setConnectionState('connected');
+                    }
+                }
                 handleWebSocketMessage(data);
             };
 
             ws.onclose = () => {
                 console.log('WebSocket closed, reconnecting...');
-                setTimeout(connectWebSocket, 3000);
+                if (wsPingInterval) { clearInterval(wsPingInterval); wsPingInterval = null; }
+                wsReconnectAttempt++;
+                if (wsReconnectAttempt <= WS_MAX_RECONNECT) {
+                    setConnectionState('reconnecting');
+                    setTimeout(connectWebSocket, 3000);
+                } else {
+                    setConnectionState('disconnected');
+                }
+            };
+
+            ws.onerror = () => {
+                setConnectionState('reconnecting');
             };
         }
 
@@ -4203,9 +4624,12 @@
                 // For long-press text selection (like iOS)
                 this.longPressTimer = null;
                 this.isSelecting = false;
-                this.longPressDelay = 500;  // 500ms hold to start selection
+                this.longPressDelay = 500;
                 this.selectionStartX = 0;
                 this.selectionStartY = 0;
+
+                // Multi-touch tracking for gestures
+                this.touchCount = 0;
 
                 this.setupListeners();
             }
@@ -4221,6 +4645,9 @@
             }
 
             handleTouchStart(e) {
+                // Track max simultaneous touches
+                this.touchCount = Math.max(this.touchCount, e.touches.length);
+
                 // Clear any existing long press timer
                 if (this.longPressTimer) {
                     clearTimeout(this.longPressTimer);
@@ -4435,10 +4862,10 @@
                 }
                 this.isRightEdgeScroll = false;
 
-                // Detect tap: short duration (< 200ms), small movement (< 15px)
-                const isTap = touchDuration < 200 && deltaX < 15 && deltaY < 15 && !this.isScrolling;
+                // Detect tap: short duration (< 200ms), small movement (< 10px)
+                const isTap = touchDuration < 200 && deltaX < 10 && deltaY < 10 && !this.isScrolling;
 
-                if (isTap && this.streamController && this.streamController.windowType === 'browser' && this.scale <= 1) {
+                if (isTap && this.streamController && this.scale <= 1) {
                     // Calculate click position relative to canvas
                     const rect = this.canvas.getBoundingClientRect();
                     const canvasX = touch.clientX - rect.left;
@@ -4451,11 +4878,26 @@
                     const y = canvasY * scaleY;
 
                     this.streamController.sendRemoteClick(x, y);
+                    showTapIndicator(touch.clientX, touch.clientY);
                     showToast('Click', 'mouse-pointer');
+                }
+
+                // Two-finger tap → send Enter
+                if (this.touchCount === 2 && touchDuration < 300 && deltaY < 15 && !this.isScrolling) {
+                    haptic('light');
+                    sendTerminalKey('Enter', {});
+                    showToast('Enter', 'corner-down-left');
+                }
+
+                // Swipe down from top 50px → close stream overlay
+                if (this.touchCount === 1 && this.touchStartY < 50 && (touch.clientY - this.touchStartY) > 80 && !this.isScrolling) {
+                    haptic('medium');
+                    if (this.streamController) this.streamController.closeStream();
                 }
 
                 this.isPanning = false;
                 this.isScrolling = false;
+                this.touchCount = 0;
                 if (this.scale <= 1) {
                     this.reset();
                 }
@@ -4687,8 +5129,12 @@
                 this.currentFps = 0;
                 this.streamActive = false;
                 this.gestureHandler = null;
-                this.isRendering = false;        // FIX: Initialize frame rendering flag
-                this.lastScrollTime = 0;         // FIX: Initialize scroll throttling timestamp
+                this.isRendering = false;
+                this.lastScrollTime = 0;
+                this.cachedDpr = window.devicePixelRatio || 1;
+                this.cachedContainerWidth = 0;
+                this.lastCanvasW = 0;
+                this.lastCanvasH = 0;
             }
 
             async openStream(windowId, windowTitle, windowClass) {
@@ -4813,39 +5259,44 @@
                 document.getElementById('stream-loading').style.display = 'none';
                 document.getElementById('stream-error').classList.remove('show');
 
-                // Skip frame rendering if previous frame still processing (prevents queue buildup)
-                if (this.isRendering) {
-                    console.log('[FRAME-DROP] Client-side frame dropped - previous frame still rendering');
-                    return;
-                }
+                // Skip frame if previous still rendering
+                if (this.isRendering) return;
+                this.isRendering = true;
 
-                // Create image from base64
-                const img = new Image();
-                img.onload = () => {
-                    this.isRendering = true; // Block new frames
+                // Decode JPEG off-thread via createImageBitmap
+                const binary = atob(data.frame);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const blob = new Blob([bytes], { type: 'image/jpeg' });
 
-                    // Account for high-DPI displays (Retina, etc.)
-                    const dpr = window.devicePixelRatio || 1;
+                createImageBitmap(blob).then(bitmap => {
                     const container = document.getElementById('stream-container');
                     const containerWidth = container.clientWidth;
-                    const scale = containerWidth / img.width;
-                    const displayHeight = Math.round(img.height * scale);
+                    const dpr = this.cachedDpr;
+                    const scale = containerWidth / bitmap.width;
+                    const displayHeight = Math.round(bitmap.height * scale);
 
-                    // Set canvas internal resolution (high for sharp text)
-                    this.canvas.width = Math.round(containerWidth * dpr);
-                    this.canvas.height = Math.round(displayHeight * dpr);
+                    const newW = Math.round(containerWidth * dpr);
+                    const newH = Math.round(displayHeight * dpr);
 
-                    // Set CSS display size
-                    this.canvas.style.width = containerWidth + 'px';
-                    this.canvas.style.height = displayHeight + 'px';
+                    // Only resize canvas when dimensions actually change
+                    if (newW !== this.lastCanvasW || newH !== this.lastCanvasH) {
+                        this.canvas.width = newW;
+                        this.canvas.height = newH;
+                        this.canvas.style.width = containerWidth + 'px';
+                        this.canvas.style.height = displayHeight + 'px';
+                        this.lastCanvasW = newW;
+                        this.lastCanvasH = newH;
+                    }
 
-                    // Draw at high resolution using requestAnimationFrame for smooth rendering
                     requestAnimationFrame(() => {
-                        this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
-                        this.isRendering = false; // Allow next frame
+                        this.ctx.drawImage(bitmap, 0, 0, this.canvas.width, this.canvas.height);
+                        bitmap.close();
+                        this.isRendering = false;
                     });
-                };
-                img.src = 'data:image/jpeg;base64,' + data.frame;
+                }).catch(() => {
+                    this.isRendering = false;
+                });
 
                 // Calculate FPS
                 this.frameCount++;
@@ -5483,27 +5934,29 @@
 
         // Send command to actual terminal window via relay (using pyautogui on PC)
         function sendTerminalCommand(command) {
-            if (!command) {
-                console.log('[TERM] Empty command');
-                return;
-            }
+            if (!command) return;
             if (!streamController.currentWindowId) {
-                console.log('[TERM] No window ID');
                 showToast('No window selected', 'alert-circle');
+                haptic('error');
                 return;
             }
-
-            console.log('[TERM] Sending command:', command, 'to window:', streamController.currentWindowId);
 
             if (ws && ws.readyState === WebSocket.OPEN) {
-                const msg = {
-                    type: 'terminal_command',
-                    window_id: streamController.currentWindowId,
-                    command: command
-                };
-                console.log('[TERM] Sending:', JSON.stringify(msg));
-                ws.send(JSON.stringify(msg));
-                showToast('Sent: ' + command, 'send');
+                // Send focus_window first, then command after brief delay
+                ws.send(JSON.stringify({
+                    type: 'focus_window',
+                    window_id: streamController.currentWindowId
+                }));
+
+                setTimeout(() => {
+                    ws.send(JSON.stringify({
+                        type: 'terminal_command',
+                        window_id: streamController.currentWindowId,
+                        command: command
+                    }));
+                    haptic('success');
+                    showToast('Sent: ' + command, 'send');
+                }, 200);
 
                 // Track cd commands for recent directories
                 const cdMatch = command.trim().match(/^cd\s+(.+)$/i);
@@ -5513,9 +5966,12 @@
                         addRecentDirectory(path);
                     }
                 }
+
+                // Track all commands for command palette
+                addRecentCommand(command);
             } else {
-                console.log('[TERM] WebSocket not open, state:', ws ? ws.readyState : 'null');
                 showToast('Not connected', 'wifi-off');
+                haptic('error');
             }
         }
 
@@ -5523,6 +5979,7 @@
         function sendTerminalKey(key, modifiers = {}) {
             if (!streamController.currentWindowId) {
                 showToast('No window selected', 'alert-circle');
+                haptic('error');
                 return;
             }
 
@@ -5533,6 +5990,7 @@
                     key: key,
                     modifiers: modifiers
                 }));
+                haptic('light');
                 showToast('Key: ' + key, 'keyboard');
             }
         }
@@ -5552,31 +6010,34 @@
                 });
             });
 
-            // Claude option selection buttons (1-5) - send option number
-            const claudeOptionBtns = document.querySelectorAll('.claude-option-btn');
-            console.log('[SETUP] Found', claudeOptionBtns.length, 'Claude option buttons');
-            claudeOptionBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const option = btn.dataset.option;
-                    console.log('[TERM] Claude option button clicked:', option);
-                    sendTerminalCommand(option);
-                    showToast(`Claude Option ${option}`, 'hash');
-                });
+            // Quick Ribbon handlers
+            const ribbonMap = {
+                'qr-yes': () => { haptic('light'); sendTerminalCommand('y'); },
+                'qr-no': () => { haptic('light'); sendTerminalCommand('n'); },
+                'qr-skip': () => { haptic('light'); sendTerminalCommand('s'); },
+                'qr-enter': () => { haptic('light'); sendTerminalKey('Enter', {}); },
+                'qr-cancel': () => { haptic('medium'); sendTerminalKey('c', { ctrl: true }); },
+                'qr-esc': () => { haptic('light'); sendTerminalKey('Escape', {}); },
+                'qr-tab': () => { haptic('light'); sendTerminalKey('Tab', {}); },
+            };
+            for (let i = 1; i <= 5; i++) {
+                ribbonMap[`qr-opt-${i}`] = ((n) => () => { haptic('light'); sendTerminalCommand(String(n)); })(i);
+            }
+            Object.entries(ribbonMap).forEach(([id, handler]) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', handler);
             });
 
-            // Quick keys (arrows, tab, escape)
-            const quickKeys = document.querySelectorAll('.term-key:not(.num-key)');
-            console.log('[SETUP] Found', quickKeys.length, 'quick keys');
-            quickKeys.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const key = btn.dataset.key;
-                    const ctrl = btn.dataset.ctrl === 'true';
-                    const alt = btn.dataset.alt === 'true';
-                    const shift = btn.dataset.shift === 'true';
-                    console.log('[TERM] Quick key clicked:', key, 'ctrl:', ctrl);
-                    sendTerminalKey(key, { ctrl, alt, shift });
+            // Tabs toggle in quick ribbon
+            const qrTabsToggle = document.getElementById('qr-tabs-toggle');
+            const tabsContent = document.getElementById('tabs-content');
+            if (qrTabsToggle && tabsContent) {
+                qrTabsToggle.addEventListener('click', () => {
+                    haptic('light');
+                    tabsContent.classList.toggle('collapsed');
+                    qrTabsToggle.classList.toggle('active');
                 });
-            });
+            }
 
             // Text input + send button
             const termInput = document.getElementById('term-input');
@@ -5735,59 +6196,17 @@
                 });
             }
 
-            // Arrow key buttons
-            const arrowKeys = document.querySelectorAll('.arrow-key');
-            console.log('[SETUP] Found', arrowKeys.length, 'arrow key buttons');
-            arrowKeys.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const direction = btn.id.replace('arrow-', '');
-                    let keyName = '';
-                    let iconName = '';
-
-                    switch(direction) {
-                        case 'up':
-                            keyName = 'ArrowUp';
-                            iconName = 'arrow-up';
-                            break;
-                        case 'down':
-                            keyName = 'ArrowDown';
-                            iconName = 'arrow-down';
-                            break;
-                        case 'left':
-                            keyName = 'ArrowLeft';
-                            iconName = 'arrow-left';
-                            break;
-                        case 'right':
-                            keyName = 'ArrowRight';
-                            iconName = 'arrow-right';
-                            break;
-                    }
-
-                    console.log('[TERM] Arrow key clicked:', direction, keyName);
-                    sendTerminalKey(keyName, {});
-                    showToast(`${direction.charAt(0).toUpperCase() + direction.slice(1)} Arrow`, iconName);
-                });
+            // Floating arrow key buttons
+            const arrowDirs = { 'floating-arrow-up': 'ArrowUp', 'floating-arrow-down': 'ArrowDown', 'floating-arrow-left': 'ArrowLeft', 'floating-arrow-right': 'ArrowRight' };
+            Object.entries(arrowDirs).forEach(([id, keyName]) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        haptic('light');
+                        sendTerminalKey(keyName, {});
+                    });
+                }
             });
-
-            // Collapsible sections
-            const tabsToggle = document.getElementById('tabs-toggle');
-            const tabsContent = document.getElementById('tabs-content');
-
-            if (tabsToggle && tabsContent) {
-                tabsToggle.addEventListener('click', () => {
-                    const isCollapsed = tabsContent.classList.contains('collapsed');
-
-                    if (isCollapsed) {
-                        // Expand
-                        tabsContent.classList.remove('collapsed');
-                        tabsToggle.classList.remove('collapsed');
-                    } else {
-                        // Collapse
-                        tabsContent.classList.add('collapsed');
-                        tabsToggle.classList.add('collapsed');
-                    }
-                });
-            }
 
             console.log('[SETUP] Terminal keyboard setup complete');
         }
@@ -6012,8 +6431,152 @@
 
             // Call deployment check on page load
             checkDeploymentStatus();
+
+            // P0-B: Detect native keyboard open/close via visualViewport
+            if (window.visualViewport) {
+                let initialHeight = window.visualViewport.height;
+                window.visualViewport.addEventListener('resize', () => {
+                    const ratio = window.visualViewport.height / initialHeight;
+                    const kbOpen = ratio < 0.75;
+                    document.documentElement.classList.toggle('native-kb-open', kbOpen);
+                    if (kbOpen) {
+                        const tc = document.getElementById('tabs-content');
+                        if (tc) tc.classList.add('collapsed');
+                    }
+                });
+            }
+
+            // P1-C: Command Palette — long-press on send button
+            (function setupCommandPalette() {
+                const termSend = document.getElementById('term-send');
+                const palette = document.getElementById('command-palette');
+                const paletteClose = document.getElementById('palette-close');
+                const paletteSearch = document.getElementById('palette-search');
+                const paletteRecent = document.getElementById('palette-recent');
+                if (!termSend || !palette) return;
+
+                let longPressTimer = null;
+
+                termSend.addEventListener('touchstart', (e) => {
+                    longPressTimer = setTimeout(() => {
+                        longPressTimer = null;
+                        haptic('medium');
+                        // Populate recent commands
+                        paletteRecent.textContent = '';
+                        getRecentCommands().forEach(cmd => {
+                            const btn = document.createElement('button');
+                            btn.className = 'palette-item';
+                            btn.textContent = cmd;
+                            btn.addEventListener('click', () => {
+                                sendTerminalCommand(cmd);
+                                palette.classList.remove('show');
+                            });
+                            paletteRecent.appendChild(btn);
+                        });
+                        palette.classList.add('show');
+                        if (paletteSearch) { paletteSearch.value = ''; paletteSearch.focus(); }
+                    }, 500);
+                }, { passive: true });
+
+                termSend.addEventListener('touchend', () => {
+                    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+                });
+                termSend.addEventListener('touchmove', () => {
+                    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+                });
+
+                // Close palette
+                if (paletteClose) paletteClose.addEventListener('click', () => palette.classList.remove('show'));
+                palette.addEventListener('click', (e) => { if (e.target === palette) palette.classList.remove('show'); });
+
+                // Template items click
+                palette.querySelectorAll('.palette-item[data-cmd]').forEach(item => {
+                    item.addEventListener('click', () => {
+                        sendTerminalCommand(item.dataset.cmd);
+                        palette.classList.remove('show');
+                    });
+                });
+
+                // Search filter
+                if (paletteSearch) {
+                    paletteSearch.addEventListener('input', () => {
+                        const q = paletteSearch.value.toLowerCase();
+                        palette.querySelectorAll('.palette-item').forEach(item => {
+                            item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+                        });
+                    });
+                }
+            })();
+
+            // P1-D: Cheat Sheet toggle
+            (function setupCheatSheet() {
+                const cheatBtn = document.getElementById('stream-cheat');
+                const cheatSheet = document.getElementById('cheat-sheet');
+                const cheatClose = document.getElementById('cheat-close');
+                if (!cheatSheet) return;
+
+                if (cheatBtn) cheatBtn.addEventListener('click', () => cheatSheet.classList.toggle('show'));
+                if (cheatClose) cheatClose.addEventListener('click', () => cheatSheet.classList.remove('show'));
+                cheatSheet.addEventListener('click', (e) => { if (e.target === cheatSheet) cheatSheet.classList.remove('show'); });
+            })();
         });
     </script>
+
+    <!-- Command Palette -->
+    <div class="command-palette" id="command-palette">
+        <div class="palette-header">
+            <input type="text" class="palette-search" id="palette-search" placeholder="Search commands..." autocomplete="off">
+            <button class="palette-close" id="palette-close">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="palette-list" id="palette-list">
+            <div class="palette-section-title">Recent</div>
+            <div id="palette-recent"></div>
+            <div class="palette-section-title">Templates</div>
+            <button class="palette-item" data-cmd="git status"><i data-lucide="git-branch"></i> git status</button>
+            <button class="palette-item" data-cmd="git diff"><i data-lucide="git-commit"></i> git diff</button>
+            <button class="palette-item" data-cmd="git add . && git commit"><i data-lucide="git-merge"></i> git add . && git commit</button>
+            <button class="palette-item" data-cmd="npm start"><i data-lucide="play"></i> npm start</button>
+            <button class="palette-item" data-cmd="npm run build"><i data-lucide="package"></i> npm run build</button>
+            <button class="palette-item" data-cmd="npm test"><i data-lucide="check-circle"></i> npm test</button>
+            <button class="palette-item" data-cmd="cd ~/projects"><i data-lucide="folder"></i> cd ~/projects</button>
+            <button class="palette-item" data-cmd="ls -la"><i data-lucide="list"></i> ls -la</button>
+            <button class="palette-item" data-cmd="python -m pytest"><i data-lucide="flask-conical"></i> python -m pytest</button>
+            <button class="palette-item" data-cmd="docker ps"><i data-lucide="container"></i> docker ps</button>
+        </div>
+    </div>
+
+    <!-- Cheat Sheet Overlay -->
+    <div class="cheat-sheet" id="cheat-sheet">
+        <div class="cheat-content">
+            <div class="cheat-title">Shortcuts & Gestures</div>
+            <div class="cheat-section">
+                <div class="cheat-section-title">Quick Ribbon</div>
+                <div class="cheat-row"><span class="cheat-key">Y / N / S</span><span class="cheat-desc">Yes / No / Skip</span></div>
+                <div class="cheat-row"><span class="cheat-key">^C</span><span class="cheat-desc">Cancel (Ctrl+C)</span></div>
+                <div class="cheat-row"><span class="cheat-key">1-5</span><span class="cheat-desc">Select option</span></div>
+                <div class="cheat-row"><span class="cheat-key">Tabs</span><span class="cheat-desc">Toggle tab switcher</span></div>
+            </div>
+            <div class="cheat-section">
+                <div class="cheat-section-title">Gestures</div>
+                <div class="cheat-row"><span class="cheat-key">Swipe Down</span><span class="cheat-desc">Close stream</span></div>
+                <div class="cheat-row"><span class="cheat-key">3-Finger Tap</span><span class="cheat-desc">Toggle keyboard</span></div>
+                <div class="cheat-row"><span class="cheat-key">Swipe L/R</span><span class="cheat-desc">Switch window</span></div>
+                <div class="cheat-row"><span class="cheat-key">2-Finger Tap</span><span class="cheat-desc">Send Enter</span></div>
+                <div class="cheat-row"><span class="cheat-key">Double Tap</span><span class="cheat-desc">Zoom in/out</span></div>
+                <div class="cheat-row"><span class="cheat-key">Long Press</span><span class="cheat-desc">Select text</span></div>
+            </div>
+            <div class="cheat-section">
+                <div class="cheat-section-title">Claude Menu (Footer)</div>
+                <div class="cheat-row"><span class="cheat-key">^L / ^R</span><span class="cheat-desc">Clear / Search</span></div>
+                <div class="cheat-row"><span class="cheat-key">^O / ^D</span><span class="cheat-desc">Verbose / Exit</span></div>
+                <div class="cheat-row"><span class="cheat-key">Arrow Keys</span><span class="cheat-desc">History nav</span></div>
+                <div class="cheat-row"><span class="cheat-key">Home / End</span><span class="cheat-desc">Top / Bottom</span></div>
+            </div>
+            <button class="cheat-close" id="cheat-close">Close</button>
+        </div>
+    </div>
 
     <!-- Floating Arrow Key Overlay -->
     <div class="floating-arrows" id="floating-arrows">
