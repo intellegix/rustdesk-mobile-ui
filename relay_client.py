@@ -1084,6 +1084,41 @@ Always use backslashes for Windows paths."""
 
         return None
 
+    def _reliable_focus(self, hwnd: int, max_retries: int = 3) -> bool:
+        """Reliably focus a window with AttachThreadInput and retry loop."""
+        try:
+            # Restore if minimized
+            if win32gui.IsIconic(hwnd):
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                time.sleep(0.1)
+
+            # Use AttachThreadInput for reliable focusing
+            current_thread = ctypes.windll.kernel32.GetCurrentThreadId()
+            target_thread = ctypes.windll.user32.GetWindowThreadProcessId(hwnd, None)
+            attached = False
+
+            if current_thread != target_thread:
+                attached = ctypes.windll.user32.AttachThreadInput(current_thread, target_thread, True)
+
+            try:
+                for attempt in range(max_retries):
+                    win32gui.SetForegroundWindow(hwnd)
+                    time.sleep(0.1)
+                    if win32gui.GetForegroundWindow() == hwnd:
+                        print(f"[FOCUS] Window {hwnd} focused on attempt {attempt + 1}")
+                        return True
+                    time.sleep(0.1)
+
+                print(f"[FOCUS] Warning: Could not verify focus after {max_retries} attempts")
+                return False
+            finally:
+                if attached:
+                    ctypes.windll.user32.AttachThreadInput(current_thread, target_thread, False)
+
+        except Exception as e:
+            print(f"[FOCUS] Error focusing window: {e}")
+            return False
+
     async def send_terminal_command(self, window_id: str, command: str):
         """Type a command into the terminal window using pyautogui."""
         if not HAS_PYAUTOGUI:
@@ -1103,18 +1138,9 @@ Always use backslashes for Windows paths."""
 
             print(f"[COMMAND] Focusing window {hwnd}...")
 
-            # Focus the window first
-            try:
-                # Restore if minimized
-                if win32gui.IsIconic(hwnd):
-                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-                    time.sleep(0.1)
-
-                win32gui.SetForegroundWindow(hwnd)
-                time.sleep(0.15)  # Give window time to come to foreground
-            except Exception as e:
-                print(f"[COMMAND] Could not focus window: {e}")
-                # Try to continue anyway
+            # Reliable focus with retry and thread attachment
+            self._reliable_focus(hwnd)
+            time.sleep(0.25)  # Increased post-focus delay for stability
 
             # Type the command using pyautogui (more reliable than PostMessage)
             print(f"[COMMAND] Typing: {command}")
@@ -1148,16 +1174,9 @@ Always use backslashes for Windows paths."""
 
             print(f"[KEY] Focusing window {hwnd}...")
 
-            # Focus the window
-            try:
-                if win32gui.IsIconic(hwnd):
-                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-                    time.sleep(0.1)
-
-                win32gui.SetForegroundWindow(hwnd)
-                time.sleep(0.1)
-            except Exception as e:
-                print(f"[KEY] Could not focus window: {e}")
+            # Reliable focus with retry and thread attachment
+            self._reliable_focus(hwnd)
+            time.sleep(0.15)
 
             # Map key names to pyautogui key names
             key_map = {
@@ -1212,6 +1231,7 @@ Always use backslashes for Windows paths."""
 
         async with aiohttp.ClientSession() as session:
             while self.running:
+                delay = 5  # Default delay in case of unexpected control flow
                 try:
                     async with session.ws_connect(ws_url, heartbeat=30) as ws:
                         self.ws = ws
