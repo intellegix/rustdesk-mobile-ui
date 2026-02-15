@@ -1481,8 +1481,8 @@ Always use backslashes for Windows paths."""
 def main():
     parser = argparse.ArgumentParser(description="RustDesk Mobile UI Relay Client")
     parser.add_argument("relay_url", help="URL of the relay server (e.g., https://your-app.onrender.com)")
-    parser.add_argument("--token", "-t", default="Devops$@2026",
-                        help="Authentication token (must match relay server)")
+    parser.add_argument("--token", "-t", required=True,
+                        help="Authentication token (must match relay server SITE_PASSWORD)")
     parser.add_argument("--host-id", "-i", default=None,
                         help="Custom host ID (default: computer name)")
     parser.add_argument("--host-name", "-n", default=None,

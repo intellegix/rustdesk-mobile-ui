@@ -13,17 +13,24 @@ import time
 from datetime import datetime
 from typing import Optional, Dict
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Response, Cookie, Form
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Response, Cookie, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse as StarletteJSONResponse
 from pydantic import BaseModel
 
 app = FastAPI(title="RustDesk Mobile UI Relay", version="1.0.0")
 
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:8765,http://127.0.0.1:8765"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,7 +73,12 @@ recent_requests: Dict[str, float] = {}  # request_hash -> timestamp
 DEDUP_WINDOW = 2.0  # 2-second deduplication window
 
 # Shared password for both site access and relay authentication
-SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "Devops$@2026")
+SITE_PASSWORD = os.environ.get("SITE_PASSWORD")
+if not SITE_PASSWORD:
+    print("ERROR: SITE_PASSWORD environment variable is required.")
+    print("Set it via: export SITE_PASSWORD='your-password-here'")
+    import sys
+    sys.exit(1)
 AUTH_TOKEN = SITE_PASSWORD  # Use same password for relay auth
 valid_sessions: set[str] = set()
 
@@ -195,6 +207,85 @@ health_monitor = ConnectionHealthMonitor()
 def is_authenticated(session_id: str) -> bool:
     """Check if session is authenticated."""
     return session_id in valid_sessions
+
+
+async def require_auth(request: Request):
+    """FastAPI dependency: require valid session cookie or Bearer token."""
+    session = request.cookies.get("session")
+    if is_authenticated(session):
+        return session
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer ") and auth_header[7:] == AUTH_TOKEN:
+        return auth_header[7:]
+    raise HTTPException(status_code=401, detail="Authentication required")
+
+
+# Paths that skip API auth
+AUTH_EXEMPT_PATHS = {"/api/health", "/login", "/logout", "/ws", "/ws/pc", "/"}
+
+
+class APIAuthMiddleware(BaseHTTPMiddleware):
+    """Middleware to require auth on all /api/* routes except exempted ones."""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if path.startswith("/api/") and path not in AUTH_EXEMPT_PATHS:
+            session = request.cookies.get("session")
+            auth_header = request.headers.get("authorization", "")
+            bearer_ok = auth_header.startswith("Bearer ") and auth_header[7:] == AUTH_TOKEN
+            if not (is_authenticated(session) or bearer_ok):
+                return StarletteJSONResponse(
+                    status_code=401,
+                    content={"detail": "Authentication required"}
+                )
+        return await call_next(request)
+
+
+app.add_middleware(APIAuthMiddleware)
+
+
+class RateLimiter:
+    """In-memory per-IP rate limiter."""
+
+    def __init__(self, max_requests: int = 120, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self.requests: Dict[str, list] = {}  # ip -> [timestamps]
+
+    def is_allowed(self, ip: str) -> bool:
+        now = time.time()
+        cutoff = now - self.window
+        if ip not in self.requests:
+            self.requests[ip] = []
+        # Prune old entries
+        self.requests[ip] = [t for t in self.requests[ip] if t > cutoff]
+        if len(self.requests[ip]) >= self.max_requests:
+            return False
+        self.requests[ip].append(now)
+        return True
+
+
+rate_limiter = RateLimiter()
+
+RATE_LIMIT_EXEMPT_PATHS = {"/api/health", "/ws", "/ws/pc", "/"}
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware to rate-limit /api/* and /login endpoints."""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if (path.startswith("/api/") or path == "/login") and path not in RATE_LIMIT_EXEMPT_PATHS:
+            client_ip = request.client.host if request.client else "unknown"
+            if not rate_limiter.is_allowed(client_ip):
+                return StarletteJSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests"}
+                )
+        return await call_next(request)
+
+
+app.add_middleware(RateLimitMiddleware)
 
 
 LOGIN_PAGE = """
@@ -980,8 +1071,16 @@ async def pc_websocket(websocket: WebSocket):
 
 @app.websocket("/ws")
 async def web_websocket(websocket: WebSocket):
-    """WebSocket endpoint for web clients."""
+    """WebSocket endpoint for web clients (authenticated)."""
     await websocket.accept()
+
+    # Auth: check session cookie or ?token= query param
+    session_cookie = websocket.cookies.get("session")
+    token_param = websocket.query_params.get("token")
+    if not (is_authenticated(session_cookie) or token_param == AUTH_TOKEN):
+        await websocket.close(code=4001, reason="Authentication required")
+        return
+
     web_connections.append(websocket)
 
     # Send initial status with list of hosts
@@ -1002,7 +1101,7 @@ async def web_websocket(websocket: WebSocket):
                 print(f"[WS] Received from web: {msg_type} - {data}")
 
             if msg_type == "ping":
-                await websocket.send_json({"type": "pong"})
+                await websocket.send_json({"type": "pong", "t": data.get("t")})
 
             elif msg_type in ("stream_start", "stream_stop", "stream_adjust"):
                 # Forward stream control messages to PC

@@ -1236,7 +1236,27 @@
             padding: 6px 12px;
             background: var(--bg-elevated);
             border-radius: 8px;
+            cursor: pointer;
         }
+
+        #perf-overlay {
+            display: none;
+            position: fixed;
+            bottom: 60px;
+            left: 8px;
+            background: rgba(0,0,0,0.8);
+            color: #0f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            z-index: 9999;
+            line-height: 1.6;
+        }
+        #perf-overlay.show { display: block; }
+        #perf-overlay .perf-quality-good { color: #4ade80; }
+        #perf-overlay .perf-quality-fair { color: #fbbf24; }
+        #perf-overlay .perf-quality-poor { color: #f87171; }
 
         .stream-container {
             flex: 1;
@@ -3159,9 +3179,9 @@
         </header>
 
         <!-- Reconnection Banner -->
-        <div class="reconnect-banner" id="reconnect-banner">
-            Reconnecting... <span id="reconnect-attempt">(attempt 1/10)</span>
-            <div class="progress-bar" id="reconnect-progress" style="width: 10%"></div>
+        <div class="reconnect-banner" id="reconnect-banner" onclick="manualReconnect()">
+            <span id="reconnect-attempt">Reconnecting...</span>
+            <div class="progress-bar" id="reconnect-progress" style="width: 0%"></div>
         </div>
 
         <!-- Navigation Tabs -->
@@ -3373,6 +3393,15 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Performance Overlay -->
+    <div id="perf-overlay">
+        <div>FPS: <span id="perf-fps">--</span></div>
+        <div>Latency: <span id="perf-latency">--</span>ms</div>
+        <div>Avg Frame: <span id="perf-framesize">--</span>KB</div>
+        <div>Drops: <span id="perf-drops">0</span></div>
+        <div>Quality: <span id="perf-quality" class="perf-quality-good">good</span></div>
     </div>
 
     <!-- Toast Notification -->
@@ -4466,9 +4495,16 @@
         let pcConnected = true; // Assume connected for local mode
 
         let wsReconnectAttempt = 0;
-        const WS_MAX_RECONNECT = 10;
+        const WS_MAX_RETRY_BANNER = 20; // Show "Tap to Retry" after this many failures
         let wsPingInterval = null;
         let wsConnectionState = 'disconnected'; // connected | slow | reconnecting | disconnected
+        let wsReconnectTimer = null;
+
+        function getReconnectDelay(attempt) {
+            const base = Math.min(2000 * Math.pow(1.5, attempt), 60000);
+            const jitter = base * 0.2 * (Math.random() * 2 - 1); // ±20%
+            return Math.round(base + jitter);
+        }
 
         function setConnectionState(state) {
             wsConnectionState = state;
@@ -4488,8 +4524,18 @@
                     banner.classList.add('show');
                     const attempt = document.getElementById('reconnect-attempt');
                     const progress = document.getElementById('reconnect-progress');
-                    if (attempt) attempt.textContent = `(attempt ${wsReconnectAttempt}/${WS_MAX_RECONNECT})`;
-                    if (progress) progress.style.width = `${(wsReconnectAttempt / WS_MAX_RECONNECT) * 100}%`;
+                    if (attempt) attempt.textContent = `(attempt ${wsReconnectAttempt})`;
+                    if (progress) {
+                        const pct = Math.min((wsReconnectAttempt / WS_MAX_RETRY_BANNER) * 100, 100);
+                        progress.style.width = `${pct}%`;
+                    }
+                } else if (state === 'disconnected') {
+                    // Show "Tap to Retry" banner
+                    banner.classList.add('show');
+                    const attempt = document.getElementById('reconnect-attempt');
+                    if (attempt) attempt.textContent = 'Connection Lost — Tap to Retry';
+                    const progress = document.getElementById('reconnect-progress');
+                    if (progress) progress.style.width = '100%';
                 } else {
                     banner.classList.remove('show');
                 }
@@ -4503,6 +4549,8 @@
 
             ws.onopen = () => {
                 console.log('WebSocket connected');
+                if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+                const wasReconnect = wsReconnectAttempt > 0;
                 wsReconnectAttempt = 0;
                 setConnectionState('connected');
                 // Ping to keep alive + measure latency
@@ -4513,6 +4561,10 @@
                         ws.send(JSON.stringify({ type: 'ping', t }));
                     }
                 }, 30000);
+                // Auto-resume stream after reconnection
+                if (wasReconnect && typeof streamController !== 'undefined') {
+                    streamController.resumeStream();
+                }
             };
 
             ws.onmessage = (event) => {
@@ -4528,6 +4580,7 @@
                 // Detect latency from pong
                 if (data.type === 'pong' && data.t) {
                     const latency = Date.now() - data.t;
+                    if (typeof perfTelemetry !== 'undefined') perfTelemetry.recordLatency(latency);
                     if (latency > 1000 && wsConnectionState === 'connected') {
                         setConnectionState('slow');
                     } else if (latency <= 1000 && wsConnectionState === 'slow') {
@@ -4541,9 +4594,25 @@
                 console.log('WebSocket closed, reconnecting...');
                 if (wsPingInterval) { clearInterval(wsPingInterval); wsPingInterval = null; }
                 wsReconnectAttempt++;
-                if (wsReconnectAttempt <= WS_MAX_RECONNECT) {
+                if (wsReconnectAttempt <= WS_MAX_RETRY_BANNER) {
                     setConnectionState('reconnecting');
-                    setTimeout(connectWebSocket, 3000);
+                    const delay = getReconnectDelay(wsReconnectAttempt - 1);
+                    // Countdown display
+                    let remaining = Math.ceil(delay / 1000);
+                    const attempt = document.getElementById('reconnect-attempt');
+                    if (attempt) attempt.textContent = `Reconnecting in ${remaining}s... (attempt ${wsReconnectAttempt})`;
+                    const countdownInterval = setInterval(() => {
+                        remaining--;
+                        if (remaining > 0 && attempt) {
+                            attempt.textContent = `Reconnecting in ${remaining}s... (attempt ${wsReconnectAttempt})`;
+                        } else {
+                            clearInterval(countdownInterval);
+                        }
+                    }, 1000);
+                    wsReconnectTimer = setTimeout(() => {
+                        clearInterval(countdownInterval);
+                        connectWebSocket();
+                    }, delay);
                 } else {
                     setConnectionState('disconnected');
                 }
@@ -4552,6 +4621,13 @@
             ws.onerror = () => {
                 setConnectionState('reconnecting');
             };
+        }
+
+        function manualReconnect() {
+            if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+            wsReconnectAttempt = 0;
+            setConnectionState('reconnecting');
+            connectWebSocket();
         }
 
         // Host tracking for multi-host support
@@ -5245,12 +5321,21 @@
                 this.lastCanvasW = 0;
                 this.lastCanvasH = 0;
                 this.forceLegacyPath = false;
+                // Auto-resume state
+                this.lastStreamWindowId = null;
+                this.lastStreamTitle = null;
+                this.lastStreamClass = null;
+                this.lastStreamOptions = null;
             }
 
             async openStream(windowId, windowTitle, windowClass) {
                 this.currentWindowId = windowId;
                 this.frameCount = 0;
                 this.fpsStartTime = Date.now();
+                // Save for auto-resume
+                this.lastStreamWindowId = windowId;
+                this.lastStreamTitle = windowTitle;
+                this.lastStreamClass = windowClass;
 
                 // Show overlay
                 document.getElementById('stream-overlay').classList.add('active');
@@ -5288,14 +5373,15 @@
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     // Optimized for smoother streaming
                     const isTerminal = this.windowType === 'terminal';
+                    this.lastStreamOptions = {
+                        fps: isTerminal ? 20 : 30,
+                        quality: 70,
+                        max_width: 1000
+                    };
                     ws.send(JSON.stringify({
                         type: 'stream_start',
                         window_id: windowId,
-                        options: {
-                            fps: isTerminal ? 20 : 30,  // Optimized FPS for reduced lag (was 10:15)
-                            quality: 70,  // Lower quality for faster encoding (still readable)
-                            max_width: 1000  // Smaller max width for faster transfer
-                        }
+                        options: this.lastStreamOptions
                     }));
                     this.streamActive = true;
                 } else {
@@ -5356,6 +5442,11 @@
                 }
                 this.streamActive = false;
                 this.currentWindowId = null;
+                // Clear auto-resume state
+                this.lastStreamWindowId = null;
+                this.lastStreamTitle = null;
+                this.lastStreamClass = null;
+                this.lastStreamOptions = null;
 
                 // Reset zoom when closing
                 if (this.gestureHandler) {
@@ -5363,6 +5454,21 @@
                 }
 
                 document.getElementById('stream-overlay').classList.remove('active');
+            }
+
+            resumeStream() {
+                if (!this.lastStreamWindowId || !ws || ws.readyState !== WebSocket.OPEN) return;
+                console.log('[STREAM] Auto-resuming stream for', this.lastStreamWindowId);
+                this.currentWindowId = this.lastStreamWindowId;
+                this.streamActive = true;
+                this.frameCount = 0;
+                this.fpsStartTime = Date.now();
+                document.getElementById('stream-loading').style.display = 'flex';
+                ws.send(JSON.stringify({
+                    type: 'stream_start',
+                    window_id: this.lastStreamWindowId,
+                    options: this.lastStreamOptions || { fps: 30, quality: 70, max_width: 1000 }
+                }));
             }
 
             handleFrame(data) {
@@ -5409,17 +5515,12 @@
                     });
                 }).catch(() => {
                     this.isRendering = false;
+                    perfTelemetry.recordDrop();
                 });
 
-                // Calculate FPS
-                this.frameCount++;
-                const elapsed = (Date.now() - this.fpsStartTime) / 1000;
-                if (elapsed >= 1) {
-                    this.currentFps = Math.round(this.frameCount / elapsed);
-                    document.getElementById('stream-fps').textContent = `${this.currentFps} FPS`;
-                    this.frameCount = 0;
-                    this.fpsStartTime = Date.now();
-                }
+                // Telemetry: record frame (estimate size from base64 length)
+                perfTelemetry.recordFrame(data.frame ? data.frame.length * 0.75 : 0);
+                this._updateFpsDisplay();
             }
 
             handleBinaryFrame(jpegBlob, width, height, seq) {
@@ -5459,14 +5560,26 @@
                     });
                 }).catch(() => {
                     this.isRendering = false;
+                    perfTelemetry.recordDrop();
                 });
 
-                // Calculate FPS
+                // Telemetry: record binary frame
+                perfTelemetry.recordFrame(jpegBlob.size || 0);
+                this._updateFpsDisplay();
+            }
+
+            _updateFpsDisplay() {
                 this.frameCount++;
                 const elapsed = (Date.now() - this.fpsStartTime) / 1000;
                 if (elapsed >= 1) {
-                    this.currentFps = Math.round(this.frameCount / elapsed);
-                    document.getElementById('stream-fps').textContent = `${this.currentFps} FPS`;
+                    const snap = perfTelemetry.getSnapshot();
+                    this.currentFps = snap.fps;
+                    const fpsEl = document.getElementById('stream-fps');
+                    if (fpsEl) {
+                        fpsEl.textContent = snap.latency > 0
+                            ? `${snap.fps} FPS | ${snap.latency}ms`
+                            : `${snap.fps} FPS`;
+                    }
                     this.frameCount = 0;
                     this.fpsStartTime = Date.now();
                 }
@@ -5641,6 +5754,122 @@
         }
 
         const streamController = new StreamController();
+
+        // ========== PERFORMANCE TELEMETRY ==========
+        class PerformanceTelemetry {
+            constructor() {
+                this.frames = [];       // timestamps of recent frames
+                this.latencies = [];    // recent RTT measurements
+                this.drops = 0;
+                this.totalFrames = 0;
+                this.totalBytes = 0;
+                this.windowSize = 5000; // 5s rolling window
+                this.quality = 'good';  // good | fair | poor
+            }
+
+            recordFrame(sizeBytes) {
+                const now = Date.now();
+                this.frames.push(now);
+                this.totalFrames++;
+                this.totalBytes += (sizeBytes || 0);
+                this._prune(now);
+                this._updateQuality();
+            }
+
+            recordLatency(ms) {
+                this.latencies.push({ t: Date.now(), v: ms });
+                if (this.latencies.length > 60) this.latencies.shift();
+                this._updateQuality();
+            }
+
+            recordDrop() {
+                this.drops++;
+            }
+
+            _prune(now) {
+                const cutoff = now - this.windowSize;
+                while (this.frames.length > 0 && this.frames[0] < cutoff) this.frames.shift();
+            }
+
+            _updateQuality() {
+                const snap = this.getSnapshot();
+                if (snap.fps >= 15 && snap.latency < 500) {
+                    this.quality = 'good';
+                } else if (snap.fps >= 5 && snap.latency < 2000) {
+                    this.quality = 'fair';
+                } else {
+                    this.quality = 'poor';
+                }
+            }
+
+            getSnapshot() {
+                const now = Date.now();
+                this._prune(now);
+                const fps = this.frames.length > 1
+                    ? Math.round(this.frames.length / (this.windowSize / 1000))
+                    : 0;
+                const recentLatencies = this.latencies.filter(l => now - l.t < 30000);
+                const latency = recentLatencies.length > 0
+                    ? Math.round(recentLatencies.reduce((s, l) => s + l.v, 0) / recentLatencies.length)
+                    : 0;
+                const avgFrameSize = this.totalFrames > 0
+                    ? Math.round(this.totalBytes / this.totalFrames)
+                    : 0;
+                return {
+                    fps,
+                    latency,
+                    drops: this.drops,
+                    totalFrames: this.totalFrames,
+                    avgFrameSize,
+                    quality: this.quality
+                };
+            }
+
+            reset() {
+                this.frames = [];
+                this.latencies = [];
+                this.drops = 0;
+                this.totalFrames = 0;
+                this.totalBytes = 0;
+                this.quality = 'good';
+            }
+        }
+
+        const perfTelemetry = new PerformanceTelemetry();
+
+        // Performance overlay toggle (tap FPS counter)
+        let perfOverlayInterval = null;
+        document.addEventListener('DOMContentLoaded', () => {
+            const fpsEl = document.getElementById('stream-fps');
+            if (fpsEl) {
+                fpsEl.addEventListener('click', () => {
+                    const overlay = document.getElementById('perf-overlay');
+                    if (!overlay) return;
+                    overlay.classList.toggle('show');
+                    if (overlay.classList.contains('show')) {
+                        perfOverlayInterval = setInterval(updatePerfOverlay, 1000);
+                        updatePerfOverlay();
+                    } else if (perfOverlayInterval) {
+                        clearInterval(perfOverlayInterval);
+                        perfOverlayInterval = null;
+                    }
+                });
+            }
+        });
+
+        function updatePerfOverlay() {
+            const snap = perfTelemetry.getSnapshot();
+            const el = (id) => document.getElementById(id);
+            if (el('perf-fps')) el('perf-fps').textContent = snap.fps;
+            if (el('perf-latency')) el('perf-latency').textContent = snap.latency || '--';
+            if (el('perf-framesize')) el('perf-framesize').textContent = snap.avgFrameSize > 0 ? (snap.avgFrameSize / 1024).toFixed(1) : '--';
+            if (el('perf-drops')) el('perf-drops').textContent = snap.drops;
+            const qEl = el('perf-quality');
+            if (qEl) {
+                qEl.textContent = snap.quality;
+                qEl.className = `perf-quality-${snap.quality}`;
+            }
+        }
 
         function setupStreamControls() {
             // Back button

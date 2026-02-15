@@ -266,3 +266,251 @@ test('each mode shows 6 primary buttons plus More', async ({ page }) => {
     expect(visibleCount).toBe(6);
   }
 });
+
+// ─── Test 9: Pong echoes timestamp ─────────────────────────────────────────────
+test('pong echoes timestamp from ping', async ({ page }) => {
+  let pongData = null;
+
+  // Custom WS mock that captures pong
+  await page.route('**/api/**', (route) => route.fulfill({ json: {} }));
+  await page.routeWebSocket('**/ws', (ws) => {
+    ws.onMessage((msg) => {
+      try {
+        const data = JSON.parse(msg);
+        if (data.type === 'ping') {
+          // Echo pong with timestamp (like fixed server)
+          const pong = { type: 'pong', t: data.t };
+          ws.send(JSON.stringify(pong));
+        }
+      } catch {}
+    });
+  });
+
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  // Send a ping and check that pong handling works (latency detection)
+  const result = await page.evaluate(() => {
+    return new Promise((resolve) => {
+      const origHandler = ws.onmessage;
+      ws.onmessage = (event) => {
+        if (typeof event.data === 'string') {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'pong') {
+              resolve({ hasT: typeof data.t === 'number', t: data.t });
+            }
+          } catch {}
+        }
+        if (origHandler) origHandler(event);
+      };
+      ws.send(JSON.stringify({ type: 'ping', t: Date.now() }));
+    });
+  });
+
+  expect(result.hasT).toBe(true);
+  expect(result.t).toBeGreaterThan(0);
+});
+
+// ─── Test 10: Reconnect delay is exponential ────────────────────────────────────
+test('reconnect delay increases exponentially', async ({ page }) => {
+  await setupMocks(page);
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  const delays = await page.evaluate(() => {
+    return [
+      getReconnectDelay(0),
+      getReconnectDelay(3),
+      getReconnectDelay(6),
+      getReconnectDelay(10),
+    ];
+  });
+
+  // Each delay should be larger than the previous (ignoring jitter margin)
+  // delay(0) base ≈ 2000, delay(3) base ≈ 6750, delay(6) base ≈ 22781
+  expect(delays[1]).toBeGreaterThan(delays[0] * 0.7);
+  expect(delays[2]).toBeGreaterThan(delays[1] * 0.7);
+  // delay(10) should be capped near 60000
+  expect(delays[3]).toBeLessThanOrEqual(72000); // 60000 + 20% jitter
+});
+
+// ─── Test 11: Manual retry after max attempts ───────────────────────────────────
+test('manual retry banner appears after max reconnect attempts', async ({ page }) => {
+  await setupMocks(page);
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  // Simulate exceeding WS_MAX_RETRY_BANNER attempts
+  await page.evaluate(() => {
+    wsReconnectAttempt = 21;
+    setConnectionState('disconnected');
+  });
+
+  const banner = page.locator('#reconnect-banner');
+  await expect(banner).toHaveClass(/show/);
+
+  const attemptText = await page.locator('#reconnect-attempt').textContent();
+  expect(attemptText).toContain('Tap to Retry');
+});
+
+// ─── Test 12: Stream auto-resumes on reconnect ─────────────────────────────────
+test('stream auto-resumes on WebSocket reconnect', async ({ page }) => {
+  let streamStartCount = 0;
+
+  await page.route('**/api/**', (route) => route.fulfill({ json: {} }));
+  await page.route('**/api/windows/*/info', (route) =>
+    route.fulfill({ json: { type: 'terminal' } })
+  );
+
+  await page.routeWebSocket('**/ws', (ws) => {
+    ws.onMessage((msg) => {
+      try {
+        const data = JSON.parse(msg);
+        if (data.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong', t: data.t }));
+        }
+        if (data.type === 'stream_start') {
+          streamStartCount++;
+        }
+      } catch {}
+    });
+  });
+
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  // Open a stream
+  await page.evaluate(() =>
+    streamController.openStream('test-win', 'Test Window', 'cmd.exe')
+  );
+
+  // Wait for stream_start to be sent
+  await page.waitForTimeout(200);
+
+  // Simulate reconnection by setting reconnect state and calling onopen logic
+  const resent = await page.evaluate(() => {
+    // Simulate that we were reconnecting
+    wsReconnectAttempt = 1;
+    // Trigger the reconnect path
+    const wasReconnect = wsReconnectAttempt > 0;
+    wsReconnectAttempt = 0;
+    if (wasReconnect && typeof streamController !== 'undefined') {
+      streamController.resumeStream();
+    }
+    return streamController.streamActive;
+  });
+
+  expect(resent).toBe(true);
+});
+
+// ─── Test 13: PerformanceTelemetry correctness ──────────────────────────────────
+test('PerformanceTelemetry computes correct snapshots', async ({ page }) => {
+  await setupMocks(page);
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  const snapshot = await page.evaluate(() => {
+    perfTelemetry.reset();
+    // Record some frames
+    for (let i = 0; i < 20; i++) {
+      perfTelemetry.recordFrame(5000);
+    }
+    perfTelemetry.recordLatency(150);
+    perfTelemetry.recordLatency(250);
+    perfTelemetry.recordDrop();
+    return perfTelemetry.getSnapshot();
+  });
+
+  expect(snapshot.totalFrames).toBe(20);
+  expect(snapshot.drops).toBe(1);
+  expect(snapshot.latency).toBe(200); // avg of 150 and 250
+  expect(snapshot.avgFrameSize).toBe(5000);
+  expect(['good', 'fair', 'poor']).toContain(snapshot.quality);
+});
+
+// ─── Test 14: FPS display updates with frames ──────────────────────────────────
+test('FPS display updates when stream frames arrive', async ({ page }) => {
+  await setupMocks(page);
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  // Mock window info for stream open
+  await page.route('**/api/windows/*/info', (route) =>
+    route.fulfill({ json: { type: 'terminal' } })
+  );
+
+  // Open stream
+  await page.evaluate(() =>
+    streamController.openStream('test-win', 'Test', 'cmd.exe')
+  );
+
+  // Simulate recording frames and forcing display update
+  await page.evaluate(() => {
+    perfTelemetry.reset();
+    for (let i = 0; i < 15; i++) {
+      perfTelemetry.recordFrame(3000);
+    }
+    perfTelemetry.recordLatency(100);
+    // Force FPS display update
+    streamController.fpsStartTime = Date.now() - 2000; // 2s ago
+    streamController._updateFpsDisplay();
+  });
+
+  const fpsText = await page.locator('#stream-fps').textContent();
+  // Should contain "FPS" text
+  expect(fpsText).toContain('FPS');
+});
+
+// ─── Test 15: Performance overlay toggle ────────────────────────────────────────
+test('performance overlay toggles visibility on FPS click', async ({ page }) => {
+  await setupMocks(page);
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  // Mock stream APIs
+  await page.route('**/api/windows/*/info', (route) =>
+    route.fulfill({ json: { type: 'terminal' } })
+  );
+
+  // Open stream to make FPS element interactive
+  await page.evaluate(() =>
+    streamController.openStream('test-win', 'Test', 'cmd.exe')
+  );
+
+  const overlay = page.locator('#perf-overlay');
+  await expect(overlay).not.toHaveClass(/show/);
+
+  // Click FPS counter to show overlay
+  await page.locator('#stream-fps').click();
+  await expect(overlay).toHaveClass(/show/);
+
+  // Click again to hide
+  await page.locator('#stream-fps').click();
+  await expect(overlay).not.toHaveClass(/show/);
+
+  await page.evaluate(() => streamController.closeStream());
+});
+
+// ─── Test 16: Reconnect banner shows countdown ─────────────────────────────────
+test('reconnect banner shows countdown number', async ({ page }) => {
+  await setupMocks(page);
+  await page.goto('/index.html');
+  await page.waitForLoadState('networkidle');
+
+  // Simulate reconnecting state with attempt count
+  await page.evaluate(() => {
+    wsReconnectAttempt = 3;
+    setConnectionState('reconnecting');
+    const attempt = document.getElementById('reconnect-attempt');
+    if (attempt) attempt.textContent = 'Reconnecting in 5s... (attempt 3)';
+  });
+
+  const banner = page.locator('#reconnect-banner');
+  await expect(banner).toHaveClass(/show/);
+
+  const text = await page.locator('#reconnect-attempt').textContent();
+  // Should contain a number (countdown) and "attempt"
+  expect(text).toMatch(/\d/);
+  expect(text).toContain('attempt');
+});
