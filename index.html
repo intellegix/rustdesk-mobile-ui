@@ -2793,6 +2793,88 @@
             margin: 0 2px;
         }
 
+        /* Ribbon mode visibility */
+        .ribbon-group { display: none; }
+        .quick-ribbon[data-mode="terminal"] .ribbon-group[data-ribbon-mode="terminal"] { display: contents; }
+        .quick-ribbon[data-mode="browser"] .ribbon-group[data-ribbon-mode="browser"] { display: contents; }
+        .quick-ribbon[data-mode="generic"] .ribbon-group[data-ribbon-mode="generic"] { display: contents; }
+        .quick-ribbon[data-mode="terminal"] .ribbon-shared,
+        .quick-ribbon[data-mode="browser"] .ribbon-shared,
+        .quick-ribbon[data-mode="generic"] .ribbon-shared { display: contents; }
+        .quick-ribbon .ribbon-overflow { display: none; }
+        .quick-ribbon.overflow-open .ribbon-overflow { display: contents; }
+
+        /* Browser mode button styles */
+        .qr-btn.nav { background: rgba(59, 130, 246, 0.15); border-color: #3B82F6; color: #3B82F6; }
+        .qr-btn.nav:active { background: #3B82F6; color: white; }
+
+        /* Generic mode button styles */
+        .qr-btn.action { background: rgba(168, 85, 247, 0.15); border-color: #A855F7; color: #A855F7; }
+        .qr-btn.action:active { background: #A855F7; color: white; }
+
+        /* More button */
+        .qr-btn.more { background: rgba(107, 114, 128, 0.15); border-color: #6B7280; color: #9CA3AF; font-size: 10px; }
+        .qr-btn.more:active { background: #6B7280; color: white; }
+        .quick-ribbon.overflow-open .qr-btn.more { background: #6B7280; color: white; }
+
+        /* Mode indicator pill */
+        .ribbon-mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .ribbon-mode-indicator .mode-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #6B7280;
+        }
+        .quick-ribbon[data-mode="terminal"] ~ .ribbon-mode-indicator .mode-dot { background: #22C55E; }
+        .quick-ribbon[data-mode="browser"] ~ .ribbon-mode-indicator .mode-dot { background: #3B82F6; }
+        .quick-ribbon[data-mode="generic"] ~ .ribbon-mode-indicator .mode-dot { background: #A855F7; }
+
+        /* Mode picker dropdown */
+        .ribbon-mode-picker {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 2px;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+        }
+        .ribbon-mode-picker.show { display: flex; }
+        .ribbon-mode-picker button {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .ribbon-mode-picker button:active,
+        .ribbon-mode-picker button.active { background: var(--accent-color); color: white; }
+
+        /* Ribbon slide transition */
+        .quick-ribbon .ribbon-group {
+            transition: opacity 150ms ease;
+        }
+
         /* ========== STREAM SLIDE-UP ANIMATION ========== */
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(100%); }
@@ -3414,23 +3496,69 @@
 
         <!-- Terminal Keyboard Controls (shown for terminal windows) -->
         <div class="terminal-keyboard" id="terminal-keyboard">
-            <!-- Quick Action Ribbon (always visible) -->
-            <div class="quick-ribbon" id="quick-ribbon">
-                <button class="qr-btn yes" id="qr-yes" title="Yes">Y</button>
-                <button class="qr-btn no" id="qr-no" title="No">N</button>
-                <button class="qr-btn skip" id="qr-skip" title="Skip">S</button>
-                <button class="qr-btn enter" id="qr-enter" title="Enter">&#x21B5;</button>
-                <button class="qr-btn cancel" id="qr-cancel" title="Ctrl+C">^C</button>
-                <button class="qr-btn esc" id="qr-esc" title="Escape">Esc</button>
-                <button class="qr-btn tab-key" id="qr-tab" title="Tab">&#x21E5;</button>
-                <div class="qr-divider"></div>
-                <button class="qr-btn option" id="qr-opt-1" title="Option 1">1</button>
-                <button class="qr-btn option" id="qr-opt-2" title="Option 2">2</button>
-                <button class="qr-btn option" id="qr-opt-3" title="Option 3">3</button>
-                <button class="qr-btn option" id="qr-opt-4" title="Option 4">4</button>
-                <button class="qr-btn option" id="qr-opt-5" title="Option 5">5</button>
-                <div class="qr-divider"></div>
-                <button class="qr-btn tab-toggle" id="qr-tabs-toggle" title="Terminal Tabs">Tabs</button>
+            <!-- Quick Action Ribbon (context-aware, mode-grouped) -->
+            <div class="quick-ribbon" id="quick-ribbon" data-mode="terminal">
+                <!-- Terminal mode: primary buttons -->
+                <span class="ribbon-group" data-ribbon-mode="terminal">
+                    <button class="qr-btn yes" id="qr-yes" title="Yes">Y</button>
+                    <button class="qr-btn no" id="qr-no" title="No">N</button>
+                    <button class="qr-btn skip" id="qr-skip" title="Skip">S</button>
+                </span>
+                <!-- Browser mode: primary buttons -->
+                <span class="ribbon-group" data-ribbon-mode="browser">
+                    <button class="qr-btn nav" id="qr-back" title="Back">&#x2190;</button>
+                    <button class="qr-btn nav" id="qr-fwd" title="Forward">&#x2192;</button>
+                    <button class="qr-btn nav" id="qr-refresh" title="Refresh">&#x21BB;</button>
+                </span>
+                <!-- Generic mode: primary buttons -->
+                <span class="ribbon-group" data-ribbon-mode="generic">
+                    <button class="qr-btn action" id="qr-click" title="Click">Click</button>
+                    <button class="qr-btn action" id="qr-rclick" title="Right Click">R-Clk</button>
+                    <button class="qr-btn action" id="qr-scroll" title="Scroll Toggle">Scrl</button>
+                </span>
+                <!-- Shared buttons (same position in all modes) -->
+                <span class="ribbon-shared">
+                    <div class="qr-divider"></div>
+                    <button class="qr-btn enter" id="qr-enter" title="Enter">&#x21B5;</button>
+                    <button class="qr-btn cancel" id="qr-cancel" title="Ctrl+C">^C</button>
+                    <button class="qr-btn esc" id="qr-esc" title="Escape">Esc</button>
+                    <div class="qr-divider"></div>
+                </span>
+                <!-- More button (expands overflow for current mode) -->
+                <button class="qr-btn more" id="qr-more" title="More actions">More</button>
+                <!-- Terminal overflow -->
+                <span class="ribbon-overflow ribbon-group" data-ribbon-mode="terminal">
+                    <button class="qr-btn tab-key" id="qr-tab" title="Tab">&#x21E5;</button>
+                    <button class="qr-btn option" id="qr-opt-1" title="Option 1">1</button>
+                    <button class="qr-btn option" id="qr-opt-2" title="Option 2">2</button>
+                    <button class="qr-btn option" id="qr-opt-3" title="Option 3">3</button>
+                    <button class="qr-btn option" id="qr-opt-4" title="Option 4">4</button>
+                    <button class="qr-btn option" id="qr-opt-5" title="Option 5">5</button>
+                    <button class="qr-btn tab-toggle" id="qr-tabs-toggle" title="Terminal Tabs">Tabs</button>
+                </span>
+                <!-- Browser overflow -->
+                <span class="ribbon-overflow ribbon-group" data-ribbon-mode="browser">
+                    <button class="qr-btn nav" id="qr-newtab" title="New Tab">+Tab</button>
+                    <button class="qr-btn nav" id="qr-closetab" title="Close Tab">xTab</button>
+                </span>
+                <!-- Generic overflow -->
+                <span class="ribbon-overflow ribbon-group" data-ribbon-mode="generic">
+                    <button class="qr-btn tab-key" id="qr-tab-generic" title="Tab">&#x21E5;</button>
+                    <button class="qr-btn action" id="qr-arrow-up" title="Arrow Up">&#x2191;</button>
+                    <button class="qr-btn action" id="qr-arrow-down" title="Arrow Down">&#x2193;</button>
+                </span>
+            </div>
+            <!-- Mode indicator (below ribbon) -->
+            <div class="ribbon-mode-indicator" id="ribbon-mode-indicator" style="position:relative;">
+                <span class="mode-dot"></span>
+                <span id="ribbon-mode-label">Terminal</span>
+                <!-- Mode picker (shown on long-press) -->
+                <div class="ribbon-mode-picker" id="ribbon-mode-picker">
+                    <button data-mode="auto" class="active">Auto</button>
+                    <button data-mode="terminal">Terminal</button>
+                    <button data-mode="browser">Browser</button>
+                    <button data-mode="generic">Generic</button>
+                </div>
             </div>
 
             <!-- Collapsible Terminal Tabs Section -->
@@ -4388,6 +4516,14 @@
             };
 
             ws.onmessage = (event) => {
+                // Binary frame path: raw JPEG with 12-byte header
+                if (event.data instanceof Blob) {
+                    if (streamController.forceLegacyPath) return;
+                    handleBinaryFrame(event.data);
+                    return;
+                }
+
+                // JSON path (text messages — control, pong, legacy frames)
                 const data = JSON.parse(event.data);
                 // Detect latency from pong
                 if (data.type === 'pong' && data.t) {
@@ -4421,6 +4557,37 @@
         // Host tracking for multi-host support
         let connectedHosts = [];
         let selectedHostId = null;
+
+        // Binary frame handler — 12-byte header + raw JPEG
+        // Header: window_id_hash (u32) + width (u16) + height (u16) + seq (u32)
+        let binaryFramesLogged = false;
+        async function handleBinaryFrame(blob) {
+            try {
+                const buffer = await blob.arrayBuffer();
+                const view = new DataView(buffer);
+
+                // Parse 12-byte header
+                const windowIdHash = view.getUint32(0, true);
+                const width = view.getUint16(4, true);
+                const height = view.getUint16(6, true);
+                const seq = view.getUint32(8, true);
+
+                // Extract JPEG payload (everything after header)
+                const jpegBytes = buffer.slice(12);
+                const jpegBlob = new Blob([jpegBytes], { type: 'image/jpeg' });
+
+                if (!binaryFramesLogged) {
+                    console.log('[BinaryFrames] active');
+                    binaryFramesLogged = true;
+                }
+
+                // Build a data object compatible with handleFrame
+                streamController.handleBinaryFrame(jpegBlob, width, height, seq);
+            } catch (e) {
+                console.warn('[BinaryFrames] fallback to JSON', e);
+                streamController.forceLegacyPath = true;
+            }
+        }
 
         function handleWebSocketMessage(data) {
             switch (data.type) {
@@ -5077,6 +5244,7 @@
                 this.cachedContainerWidth = 0;
                 this.lastCanvasW = 0;
                 this.lastCanvasH = 0;
+                this.forceLegacyPath = false;
             }
 
             async openStream(windowId, windowTitle, windowClass) {
@@ -5172,6 +5340,9 @@
                     // Focus input after a short delay
                     setTimeout(() => document.getElementById('term-input').focus(), 100);
                 }
+
+                // Update ribbon mode with hysteresis
+                requestRibbonModeSwitch(this.windowType);
             }
 
             closeStream() {
@@ -5222,6 +5393,56 @@
                     const newH = Math.round(displayHeight * dpr);
 
                     // Only resize canvas when dimensions actually change
+                    if (newW !== this.lastCanvasW || newH !== this.lastCanvasH) {
+                        this.canvas.width = newW;
+                        this.canvas.height = newH;
+                        this.canvas.style.width = containerWidth + 'px';
+                        this.canvas.style.height = displayHeight + 'px';
+                        this.lastCanvasW = newW;
+                        this.lastCanvasH = newH;
+                    }
+
+                    requestAnimationFrame(() => {
+                        this.ctx.drawImage(bitmap, 0, 0, this.canvas.width, this.canvas.height);
+                        bitmap.close();
+                        this.isRendering = false;
+                    });
+                }).catch(() => {
+                    this.isRendering = false;
+                });
+
+                // Calculate FPS
+                this.frameCount++;
+                const elapsed = (Date.now() - this.fpsStartTime) / 1000;
+                if (elapsed >= 1) {
+                    this.currentFps = Math.round(this.frameCount / elapsed);
+                    document.getElementById('stream-fps').textContent = `${this.currentFps} FPS`;
+                    this.frameCount = 0;
+                    this.fpsStartTime = Date.now();
+                }
+            }
+
+            handleBinaryFrame(jpegBlob, width, height, seq) {
+                // Binary frames skip window_id matching (hash-based, no string compare needed)
+                // Hide loading, show canvas
+                document.getElementById('stream-loading').style.display = 'none';
+                document.getElementById('stream-error').classList.remove('show');
+
+                // Skip frame if previous still rendering
+                if (this.isRendering) return;
+                this.isRendering = true;
+
+                // Directly create bitmap from JPEG blob (no base64 decode needed)
+                createImageBitmap(jpegBlob).then(bitmap => {
+                    const container = document.getElementById('stream-container');
+                    const containerWidth = container.clientWidth;
+                    const dpr = this.cachedDpr;
+                    const scale = containerWidth / bitmap.width;
+                    const displayHeight = Math.round(bitmap.height * scale);
+
+                    const newW = Math.round(containerWidth * dpr);
+                    const newH = Math.round(displayHeight * dpr);
+
                     if (newW !== this.lastCanvasW || newH !== this.lastCanvasH) {
                         this.canvas.width = newW;
                         this.canvas.height = newH;
@@ -5970,6 +6191,42 @@
                 if (el) el.addEventListener('click', handler);
             });
 
+            // Browser mode ribbon handlers
+            const browserRibbonMap = {
+                'qr-back': () => { haptic('light'); streamController.goBack(); },
+                'qr-fwd': () => { haptic('light'); streamController.goForward(); },
+                'qr-refresh': () => { haptic('light'); streamController.refresh(); },
+                'qr-newtab': () => { haptic('light'); sendTerminalKey('t', { ctrl: true }); },
+                'qr-closetab': () => { haptic('light'); sendTerminalKey('w', { ctrl: true }); },
+            };
+            Object.entries(browserRibbonMap).forEach(([id, handler]) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', handler);
+            });
+
+            // Generic mode ribbon handlers
+            const genericRibbonMap = {
+                'qr-click': () => { haptic('light'); sendTerminalKey('Return', {}); },
+                'qr-rclick': () => { haptic('light'); sendTerminalKey('Apps', {}); },
+                'qr-scroll': () => { haptic('light'); showToast('Use two-finger scroll on stream', 'mouse'); },
+                'qr-tab-generic': () => { haptic('light'); sendTerminalKey('Tab', {}); },
+                'qr-arrow-up': () => { haptic('light'); sendTerminalKey('ArrowUp', {}); },
+                'qr-arrow-down': () => { haptic('light'); sendTerminalKey('ArrowDown', {}); },
+            };
+            Object.entries(genericRibbonMap).forEach(([id, handler]) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', handler);
+            });
+
+            // More button toggles overflow
+            const moreBtn = document.getElementById('qr-more');
+            if (moreBtn) {
+                moreBtn.addEventListener('click', () => {
+                    haptic('light');
+                    document.getElementById('quick-ribbon').classList.toggle('overflow-open');
+                });
+            }
+
             // Tabs toggle in quick ribbon
             const qrTabsToggle = document.getElementById('qr-tabs-toggle');
             const tabsContent = document.getElementById('tabs-content');
@@ -6151,6 +6408,99 @@
             });
 
             console.log('[SETUP] Terminal keyboard setup complete');
+
+            // Ribbon mode management
+            setupRibbonMode();
+        }
+
+        // ─── Ribbon Mode Management ──────────────────────────────────────────
+        let ribbonModeOverride = sessionStorage.getItem('ribbonModeOverride') || 'auto';
+        let ribbonHysteresisTimer = null;
+        let currentRibbonMode = 'terminal';
+
+        function updateRibbonMode(mode) {
+            if (mode === currentRibbonMode) return;
+            currentRibbonMode = mode;
+            const ribbon = document.getElementById('quick-ribbon');
+            const label = document.getElementById('ribbon-mode-label');
+            if (ribbon) {
+                ribbon.dataset.mode = mode;
+                ribbon.classList.remove('overflow-open');
+            }
+            if (label) label.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+            console.log('[RIBBON] Mode switched to:', mode);
+        }
+
+        function ribbonModeFromWindowType(windowType) {
+            if (ribbonModeOverride !== 'auto') return ribbonModeOverride;
+            return windowType || 'terminal';
+        }
+
+        function requestRibbonModeSwitch(windowType) {
+            const targetMode = ribbonModeFromWindowType(windowType);
+            if (targetMode === currentRibbonMode) {
+                if (ribbonHysteresisTimer) { clearTimeout(ribbonHysteresisTimer); ribbonHysteresisTimer = null; }
+                return;
+            }
+            // 500ms hysteresis to prevent flicker on rapid window switching
+            if (ribbonHysteresisTimer) clearTimeout(ribbonHysteresisTimer);
+            ribbonHysteresisTimer = setTimeout(() => {
+                updateRibbonMode(targetMode);
+                ribbonHysteresisTimer = null;
+            }, 500);
+        }
+
+        function setupRibbonMode() {
+            // Long-press on mode indicator → show picker
+            const indicator = document.getElementById('ribbon-mode-indicator');
+            const picker = document.getElementById('ribbon-mode-picker');
+            if (!indicator || !picker) return;
+
+            let longPressTimer = null;
+            indicator.addEventListener('touchstart', (e) => {
+                longPressTimer = setTimeout(() => {
+                    haptic('medium');
+                    picker.classList.add('show');
+                }, 500);
+            }, { passive: true });
+            indicator.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+            indicator.addEventListener('touchcancel', () => { clearTimeout(longPressTimer); });
+
+            // Also allow a plain click to toggle picker
+            indicator.addEventListener('click', (e) => {
+                if (e.target.closest('.ribbon-mode-picker')) return;
+                picker.classList.toggle('show');
+            });
+
+            // Picker button handlers
+            picker.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const mode = btn.dataset.mode;
+                    ribbonModeOverride = mode;
+                    sessionStorage.setItem('ribbonModeOverride', mode);
+
+                    // Update active state in picker
+                    picker.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    if (mode === 'auto') {
+                        // Re-derive from current window type
+                        const wt = streamController ? streamController.windowType : 'terminal';
+                        updateRibbonMode(wt || 'terminal');
+                    } else {
+                        updateRibbonMode(mode);
+                    }
+                    picker.classList.remove('show');
+                });
+            });
+
+            // Close picker on outside tap
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.ribbon-mode-indicator')) {
+                    picker.classList.remove('show');
+                }
+            });
         }
 
         function setupTerminalControls() {

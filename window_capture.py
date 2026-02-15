@@ -232,12 +232,12 @@ class WindowCapture:
             # Convert to JPEG - fast encoding settings
             buffer = io.BytesIO()
             img.save(buffer, format='JPEG', quality=quality, subsampling=2, progressive=False)
-            buffer.seek(0)
+            jpeg_bytes = buffer.getvalue()
 
             # Encode to base64
-            b64_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            b64_data = base64.b64encode(jpeg_bytes).decode('utf-8')
 
-            return (b64_data, width, height)
+            return (b64_data, width, height, jpeg_bytes)
 
         except Exception as e:
             print(f"Capture error: {e}")

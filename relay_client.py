@@ -14,6 +14,7 @@ import subprocess
 import threading
 import queue
 import time
+import struct
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 from typing import Dict, Set, Optional
@@ -640,7 +641,7 @@ class RelayClient:
                 if HAS_CAPTURE:
                     result = WindowCapture.capture_window(int(window_id), quality=quality, max_width=max_width)
                     if result:
-                        b64_data, width, height = result
+                        b64_data, width, height = result[0], result[1], result[2]
                         return {"frame": b64_data, "width": width, "height": height, "window_id": window_id}
                     return {"error": "Window not available"}
                 return {"error": "Window capture not available"}
@@ -850,19 +851,14 @@ Always use backslashes for Windows paths."""
                     await self.send_stream_error(window_id, "Window not available")
                     break
 
-                b64_data, width, height = result
+                b64_data, width, height, jpeg_bytes = result
                 seq += 1
 
-                # Send frame to relay
+                # Send binary frame: 12-byte header + raw JPEG
                 if self.ws:
-                    await self.ws.send_json({
-                        "type": "stream_frame",
-                        "window_id": window_id,
-                        "frame": b64_data,
-                        "width": width,
-                        "height": height,
-                        "seq": seq
-                    })
+                    window_id_hash = hash(window_id) & 0xFFFFFFFF
+                    header = struct.pack('<IHHI', window_id_hash, width, height, seq & 0xFFFFFFFF)
+                    await self.ws.send_bytes(header + jpeg_bytes)
 
                 await asyncio.sleep(interval)
 

@@ -806,7 +806,29 @@ async def pc_websocket(websocket: WebSocket):
 
     try:
         while True:
-            data = await websocket.receive_json()
+            message = await websocket.receive()
+
+            # Binary message — forward stream frame directly to web clients
+            if "bytes" in message and message["bytes"]:
+                raw_bytes = message["bytes"]
+                MAX_PENDING_FRAMES = 3
+                for wc in web_connections:
+                    try:
+                        if hasattr(wc, '_pending_frames'):
+                            if wc._pending_frames >= MAX_PENDING_FRAMES:
+                                continue
+                        else:
+                            wc._pending_frames = 0
+                        wc._pending_frames += 1
+                        await wc.send_bytes(raw_bytes)
+                        wc._pending_frames = max(0, wc._pending_frames - 1)
+                    except:
+                        if hasattr(wc, '_pending_frames'):
+                            wc._pending_frames = 0
+                continue
+
+            # Text message — parse as JSON
+            data = json.loads(message.get("text", "{}"))
             msg_type = data.get("type", "")
 
             # Handle host registration message - this officially adds the host
